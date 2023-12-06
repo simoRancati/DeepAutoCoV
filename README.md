@@ -6,7 +6,7 @@ Forecasting dominance of SARS-CoV-2 lineages by anomaly detection using deep Aut
 Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Deep Learning AutoEncoder and to perform the simulation are located in the model folder. Scripts to generate the dataset and the feature representations are within the Feature_Extraction folder.
 
 ## Feature Extraction
-The file to create the dataset is <code>Data_filtration_kmers.py</code>. Example:
+The files to create the dataset is <code>First_Filtration.R</code> and <code>Data_filtration_kmers.py</code>. Example:
 <code>python Data_Filtration_kmers.py -f Spikes_prova.fasta -c pseudodataset.csv -m 1000 -l 30 -p /path/to/save/dataset_interest_2023 </code>
 
 Mandatory
