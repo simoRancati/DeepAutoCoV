@@ -14,10 +14,10 @@ I)<code>First_Filtration.R</code> serves as the primary tool for processing the 
 Mandatory:
 
 
-spikes.fasta: path where the input fasta file is stored (Example file: <code>data_github/Spikes_prova.fasta</code>);
-metadata.tsv: path where the input metadata (tsv) is stored (Example file: <code>data_github/pseudodataset.tsv</code>);Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
-output_sequences.fasta: path where the output fasta file is saved
-output_metadata.csv: path where the output csv file is saved
+-spikes.fasta: path where the input fasta file is stored (Example file: <code>data_github/Spikes_prova.fasta</code>);
+-metadata.tsv: path where the input metadata (tsv) is stored (Example file: <code>data_github/pseudodataset.tsv</code>);Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
+-output_sequences.fasta: path where the output fasta file is saved
+-output_metadata.csv: path where the output csv file is saved
 
 
 -Output:
