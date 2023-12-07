@@ -8,7 +8,7 @@ Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Dee
 ## Feature Extraction
 The files to create the dataset is <code>First_Filtration.R</code> and <code>Data_filtration_kmers.py</code>.
 
-I)<code>First_Filtration.R</code> serves as the primary tool for processing the <code>metadataset.tsv</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>Spikes.fasta</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>.Example: <code>Rscript First_Filtration.R metadata.tsv spikes.fasta output_sequences.fasta output_metadata.csv</code>
+I)<code>First_Filtration.R</code> serves as the primary tool for processing the <code>metadataset.tsv</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>Spikes.fasta</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>. Example: <code>Rscript First_Filtration.R metadata.tsv spikes.fasta output_sequences.fasta output_metadata.csv</code>
 
 
 Mandatory:
