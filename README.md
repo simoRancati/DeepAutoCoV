@@ -8,7 +8,6 @@ Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Dee
 ## Feature Extraction
 The files to create the dataset is <code>First_Filtration.R</code> and <code>Data_filtration_kmers.py</code>.
 I)<code>First_Filtration.R</code> serves as the primary tool for processing the <code>metadataset.tsv</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>Spikes.fasta</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>.Example: <code>Rscript First_Filtration.R metadata.tsv spikes.fasta output_sequences.fasta output_metadata.csv</code>
-
 Mandatory
 spikes.fasta: path where the input fasta file is stored (Example file: <code>data_github/Spikes_prova.fasta</code>).
 metadata.tsv: path where the input metadata (tsv) is stored (Example file: <code>data_github/pseudodataset.tsv</code>). Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
