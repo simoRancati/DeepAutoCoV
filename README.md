@@ -68,13 +68,13 @@ Mandatory:
 
 -c path where <code>filtered_metadatataset</code> is stored (<code>Exemple: /path/to/metadata.csv </code>);
 
--k path where kmers are stored (example: first line of csv file created in subfolders <code>EPI_ISL_6331230.csv</code>).
+-k path where kmers are stored (example: first line of csv file created in subfolders <code>/path/to/EPI_ISL_6331230.csv</code>).
 
 Optional:
 
 -s path to save the outputs (<code>/path/to/save/drive_save</code>);
 
--m fraction of kmers that are different from 0 to mantain during the simulation (<code>default value: 0.05</code>);
+-m fraction of kmers that are different from 0 to mantain during the simulation (<code>default value: 0.01</code>);
 
 -e number of epochs (<code>default value: 300</code>);
 
