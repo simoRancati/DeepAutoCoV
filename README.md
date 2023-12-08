@@ -36,7 +36,8 @@ II)<code>Data_filtration_kmers.py</code>acts the second phase in the data proces
 
 Mandatory:
 
--f: path where the input fasta file is stored (Example file: <code>data_github/Spikes_prova.fasta</code>).
+-f: path where the input fasta file is stored (Example file: <code>data_github/Spikes_prova.fasta</code>);
+
 -c: path where the input metadata (csv) is stored (Example file: <code>data_github/pseudodataset.csv</code>). Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
 
 
