@@ -58,8 +58,8 @@ Optional:
   a) csv file for each sequence (<code>EPI_ISL_6331230.csv</code>).In the first raw contains all the k-mers possible.    The second, instead, contains a sequence of 0/1 that indicates the presence or absence of k-mers.
   b) txt File (<code>week_dataset.txt</code>) that contains the identificators and the sequence of 0/1
 
-## Model prediction
-The file to predict the anomalies and run the simulation is <code>Main_prediction_AE.py</code>. Example:
+## Simulation
+The file to run the simulation is <code>DeepAutoCov</code>. Example:
 <code>python Main_prediction_AE.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 300 -b 256 -d 1024 -r 1e-7 </code>
 
 Mandatory:
@@ -84,15 +84,17 @@ Optional:
 
 -r learning rate (<code>default value: 1e-7</code>).
 
+-n Simulation Weeks (<code>default value: 2 </code>).
+
 
 -Output:
-1) Precision-graph of the top 100 sequences with higer mean square error (mse) considereted as anomalies by DeepAutoCov model (<code>Fraction_general100</code>);
-2) file.log containing for each week of simulation how many sequences the model identified like anomalies for each Future Dominant Lineage or FDL (<code>Autoencode_performance.log</code>);
-3) Graph of the precision considering all the sequences considerated anomalies by DeepAutoCov model (<code>precision_overall.png</code>);
-4) Graph F1,Precision,Recall (these graphs are as tests to see how the behaviour of model not considering the fact that the "Anomaly" class varies each time) (<code>precision_in_time.png</code>,<code>recall_in_time.png</code>,<code>f1_in_time</code>); 
-5) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>autoencoder_AERNS.h5</code>);
-6) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
-7) file CSV that contains for each sequence analysed the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly) (<code>summary_kmers_week.csv</code>). 
+1) Precision-graph of the top 100 sequences with higer mean square error (mse) considereted as anomalies by DeepAutoCov model (<code>precision_top100.png</code>);
+2) Graph of the precision considering all the sequences considerated anomalies by DeepAutoCov model (<code>precision_overall.png</code>);
+3) File txt that contain the features of Autoencoder Model (<code>Features.txt.png</code>);
+4) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>Autoencoder_models.h5</code>);
+5) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
+6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly) (<code>summary_kmers_week.csv</code>).
+7)  
 
 
 ## Model_filter prediction
