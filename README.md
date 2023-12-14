@@ -97,4 +97,4 @@ Optional:
 7) File txt containing for each FDLs the weeks in advance when DeepAutoCov flags them as anomalies (<code>Distance_prediction.txt</code>);
 8) File txt containing the median frequency of FDLs when DeepAutoCov flags them as anomalies (<code>median_area.txt</code>);
 9) File txt containing precision of DeepAutoCov (<code>precision_top100.txt</code>);
-10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCov. 
+10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCov (<code>TOP_100.txt</code>). 
