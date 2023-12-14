@@ -94,34 +94,7 @@ Optional:
 4) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>Autoencoder_models.h5</code>);
 5) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
 6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly) (<code>summary_kmers_week.csv</code>).
-7)  
-
-
-## Model_filter prediction
-In the drive <code>model_filtration</code> is reported the scripts of  model described in the above article but with an addition filter to improve the performance. This filter consists in a  lookuptable containing the FDLs that during the simulation the model recognize as anomalies. The FDLs are insert into the lookuptable after that thay have reached a particular threshold (i.e; When the pubblic health authority recognize a lineage like dominant). This techinque helps the model to not recognize the FDLs as anomalies after that they are discovered by pubblic health authority. 
-The file to predict the anomalies and run the simulation is <code>Main_prediction_AE_Filter.py</code>. Example:
-<code>python Main_prediction_AE.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 300 -b 256 -d 1024 -r 1e-7 </code>
-
-Mandatory:
--p path of dataset created during the feature extraction (<code>Exemple: /path/to/save/dataset/</code>);
--c path where <code>filtered_metadatataset</code> is stored (<code>Exemple: /path/to/metadata.csv </code>);
--k path where kmers are stored (example: first line of csv file created in subfolders <code>EPI_ISL_6331230.csv</code>).
-
-Optional
--s path to save the outputs (<code>/path/to/save/drive_save</code>);
--m fraction of kmers that are different from 0 to mantain during the simulation (<code>default value: 0.05</code>);
--e number of epochs (<code>default value: 300</code>);
--b batch size for the first week (<code>default value: 256</code>);
--d Sets the encoding dimension (<code>default value: 1024</code>);
--r learning rate (<code>default value: 1e-7</code>).
-
-
--Output:
-1) Precision-graph of the top 100 sequences with higer mean square error (mse) considereted as anomalies by DeepAutoCov model (<code>Fraction_general100</code>);
-2) file.log containing for each week of simulation how many sequences the model identified like anomalies for each Future Dominant Lineage or FDL (<code>Autoencode_performance.log</code>);
-3) File txt that contains for each week the lineages considerated like anomalies (<code>TOP_100_FILTERING.txt</code>)
-4) File txt that contains for each week the percantage of lineages considerated like anomalies (<code>TOP_100_FILTERING_PERCENTAGE.txt</code>)
-7) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>autoencoder_AERNS.h5</code>);
-8) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
-9) file CSV that contains for each sequence analysed the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly) (<code>summary_kmers_week.csv</code>);
-10) File txt that contains the weeks in advance that the DeepAutoCov identify a FDL as anomaly (<code>distance_prediction.txt</code>).
+7) File txt containing for each FDLs the weeks in advance when DeepAutoCov flags them as anomalies (<code>Distance_prediction.txt</code>);
+8) File txt containing the median frequency of FDLs when DeepAutoCov flags them as anomalies (<code>median_area.txt</code>);
+9) File txt containing precision of DeepAutoCov (<code>precision_top100.txt</code>);
+10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCov. 
