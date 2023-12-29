@@ -630,8 +630,8 @@ def lineages_of_interest():
     return valid_lineage,valid_lineage_prc,dictionary_lineage_week,lineage_know
 
 def retraining_weeks():
-    retraining_week = [] # [weeks of retraining (third time when a lineage reach the 10 % of frequency)]
-    retraining_week_false_positive = [] # [weeks of retraining (third time when a lineage reach the 10 % of frequency), the last week]
+    retraining_week = [] # [weeks of retraining]
+    retraining_week_false_positive = [] # [weeks of retraining,the last week]
     return retraining_week,retraining_week_false_positive
 
 def write_feature(feature_model, path_to_save, name_txt):
