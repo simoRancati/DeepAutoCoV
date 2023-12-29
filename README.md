@@ -59,8 +59,13 @@ Optional:
   b) txt File (<code>week_dataset.txt</code>) that contains the identificators and the sequence of 0/1
 
 ## Simulation
-The file to run the simulation is <code>DeepAutoCov</code>. Example:
-<code>python Main_prediction_AE.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 300 -b 256 -d 1024 -r 1e-7 </code>
+This repository hosts the code required to replicate simulations for various datasets, including Global, United States of America, United Kingdom, Denmark, and France. Within each dataset's folder, you will find two scripts:
+
+1)<code>DeepAutoCov.py</code>: This is the primary script where the simulation is executed.
+2)<code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCov.py.
+
+To run the simulation :
+<code>python DeepAutoCov.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 300 -b 256 -d 1024 -r 1e-7 </code>
 
 Mandatory:
 
