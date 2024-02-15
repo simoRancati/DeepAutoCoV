@@ -5,8 +5,6 @@ import numpy as np
 from collections import Counter
 from scipy.stats import shapiro
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import seaborn as sns
 import csv
 
 
@@ -163,7 +161,9 @@ def weeks_before(summary):
     """
 
     # A predefined NumPy array containing lineages and their respective weeks of recognition.
-    week_identification_np=np.array([['B.1',14],['B.1.1 ',29],['B.1.160',34],['B.1.177',45],['B.1.1.7',55],['B.1.617.2',78],['B.1.351',78], ['AY.43',83],['AY.42',83],['AY.98.1',84],['AY.122',94],['AY.125',94],['AY.92',99],['AY.5',99],['AY.34',99],['AY.4',99],['BA.1',110],['BA.2',111],['BA.2.9',133],['BA.2.12.1',130],['BA.5',138],['CH.1.1',161],['XBB.1.5',170],['XBB.1.16',188],['B.1.367',34],['BE.6',149],['BF.7',149],['BQ.1.1',152],['BN.1',158]])
+    week_identification_np=np.array([['B.1',13],['B.1.1 ',22],['B.1.159',24],['B.1.416',28],['B.1.160',28],['B.1.367',34],['B.1.177',41],['B.1.1.7',55],['B.1.617.2',76], ['AY.43',83],['AY.42',83],['AY.98.1',84],['AY.122',94],['AY.125',94],['AY.5',99],['AY.4',99],['BA.1',110],['BA.2',112],['BA.2.12.1',130],['BA.5',138],['BA.2.9',142],['BA.2.75',144],['CH.1.1',159],['XBB.1.5',168],['XBB.1.16',188],['BE.6',148],['BF.7',148],['BQ.1.1',152],['BN.1',161]])
+    week_growing_np=np.array([['B.1',5],['B.1.1 ',13],['B.1.159',14],['B.1.416',1],['B.1.160',26],['B.1.367',3],['B.1.177',23],['B.1.1.7',10],['B.1.617.2',9], ['AY.43',13],['AY.42',9],['AY.98.1',12],['AY.122',24],['AY.125',16],['AY.5',25],['AY.4',24],['BA.1',7],['BA.2',7],['BA.2.12.1',7],['BA.5',7],['BA.2.9',34],['BA.2.75',8],['CH.1.1',7],['XBB.1.5',2],['XBB.1.16',12],['BE.6',6],['BF.7',13],['BQ.1.1',7],['BN.1',14]])
+
     # Convert the input summary to a NumPy array for easier processing.
     summary_np = np.array(summary)
 
@@ -187,9 +187,12 @@ def weeks_before(summary):
         # Find the index in the predefined array for the current lineage.
         i_w = np.where(week_identification_np == k)[0]
 
+        # Find the index in the predefined array for the current lineage.
+        i_f = np.where(week_growing_np == k)[0]
+
         # Extract recognized weeks for the current lineage.
         week_recognize = np.array(list(map(int, week_identification_np[i_w, 1])))
-
+        interval_10_percent = np.array(list(map(int, week_growing_np[i_f, 1])))
         # Extract predicted counts and anomaly weeks for the current lineage from the summary.
         predicted = np.array(list(map(int, summary_np[i_k, 2])))
         week_an = np.array(list(map(int, summary_np[i_k, 3])))
@@ -203,9 +206,10 @@ def weeks_before(summary):
 
         # Calculate the difference in weeks between recognized and first predicted anomaly week.
         week_before = np.array(week_recognize - week_first_prediction_true)
+        fraction_before = np.array((week_recognize - week_first_prediction_true)/interval_10_percent)
 
         # Append the result to the final_distance list.
-        summary = [k, week_before]
+        summary = [k, week_before,fraction_before]
         final_distance.append(summary)
 
     # Return the list of differences for each lineage.
@@ -397,6 +401,9 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
     autoencoder = tf.keras.Model(inputs=input_layer, outputs=decoder)
     autoencoder.summary()
 
+    # constant egual 2.5
+    k = 2.5
+
     # Callbacks for Model Checkpoint and Early Stopping
     # Set up a checkpoint to save the model and early stopping to prevent overfitting.
     cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.h5",
@@ -416,38 +423,7 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
                         optimizer='adam')
 
     # Return the compiled autoencoder model.
-    return autoencoder
-
-def plot_sma(vector, window_size,path_save):
-    """
-    It calculates the Simple Moving Average (SMA) of a vector and plots it together with the barplot of the vector.
-    The window_size parameter indicates the size of the moving window.
-    """
-    sma = np.convolve(vector, np.ones(window_size) / window_size, mode='valid') #SMA
-
-    fig, ax1 = plt.subplots(figsize=(20, 12))  # Create a figure and a subplot.
-
-    # Plot the bar graph
-    ax1.bar(range(len(vector)), vector, 0.4, color='#66c2a5', alpha=0.7)
-    ax1.plot(range(window_size - 1, len(vector)), sma, 'r')
-    ax1.set_title(str('False positive rate'), fontsize=26)
-    #ax1.grid(False)  # Remove grid lines
-
-    ax1.set_xlabel('Week', fontsize=24)  # Set x-axis label
-    ax1.set_ylabel('False Positive Rate', fontsize=24)  # Set y-axis label
-    ax1.tick_params(axis='both', which='major', labelsize=24)  # Set tick label size
-
-    # Create an inset axes for the boxplot
-    ax2 = inset_axes(ax1, width="40%", height="30%", loc='upper center')
-    data_fp = {"False positive rate": vector}
-    df_fp = pd.DataFrame(data_fp)
-    sns.boxplot(x="False positive rate", data=df_fp, ax=ax2)
-    ax2.set_xlabel("FPR", fontsize=22)
-    ax2.tick_params(axis='x', labelsize=22)  # Increase x-axis label size for boxplot
-    ax2.grid(False)  # Remove grid lines
-    plt.savefig(str(path_save)+'/FalsePositiveRate.png', bbox_inches='tight')
-    plt.show()
-
+    return autoencoder,k
 
 
 def kmers_importance(prediction, true_sequence, kmers):
@@ -476,10 +452,10 @@ def kmers_importance(prediction, true_sequence, kmers):
     sorted_indices = sorted(range(len(differences)), key=lambda k: differences[k], reverse=True)
 
     # Select the indices corresponding to the top 6 differences.
-    top_6_indices = sorted_indices[:6]
+    #top_6_indices = sorted_indices[:6]
 
     # Retrieve the k-mers corresponding to these top 6 indices.
-    kmers_selected = [kmers[i] for i in top_6_indices]
+    kmers_selected = [kmers[i] for i in sorted_indices]
 
     # Return the selected k-mers.
     return kmers_selected
@@ -613,90 +589,99 @@ def lookup_post(y_test_i_predict, y_test_step_i, knowledge):
 
 def lineages_of_interest():
     ## Valid Lineages
-    valid_lineage_FDLs = ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.122','B.1.617.2',
-                     'AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1']  # mettere i lineage che definisco come classe# mettere i lineage che definisco come classe
+    valid_lineage_FDLs = ['B.1', 'B.1.1','B.1.159','B.1.416', 'B.1.160', 'B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4','AY.5','AY.122','AY.125','B.1.617.2',
+                     'AY.98.1','AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.2.75']  # mettere i lineage che definisco come classe# mettere i lineage che definisco come classe
 
     valid_lineage_newFDLS = ['BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16']
     valid_lineage = valid_lineage_FDLs + valid_lineage_newFDLS
 
     # Valid Lineages PRC
     valid_lineage_prc = [
-        ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.617.2','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# Start
-        ['B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.122', 'AY.98.1', 'AY.125', 'AY.92','AY.42', 'AY.5', 'AY.34', 'B.1.617.2', 'B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.5','BE.6','BF.7','BN.1','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16'],#14-29
-        ['B.1.160','B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.617.2','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'], # 29-34
-        ['B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.617.2','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# 34-45
-        ['AY.43', 'B.1.1.7', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.617.2','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# 45-55
-        ['AY.43', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','B.1.617.2','B.1.351', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#55-78
-        ['AY.43', 'AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.42','AY.5','AY.34','BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# 78-83
-        ['AY.4', 'AY.122','AY.98.1','AY.125','AY.92','AY.5','AY.34','BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# 83-84
-        ['AY.4', 'AY.122','AY.125','AY.92','AY.5','AY.34','BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# 84-94
-        ['AY.4','AY.92','AY.5','AY.34','BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'], #94-99
-        ['BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#99-110
-        ['BA.2', 'BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#110-111
-        ['BA.2.9', 'BA.2.12.1','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#111-130
-        ['BA.2.9','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#130-133
-        ['BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#133-138
-        ['BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],#138-149
-        ['BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],  # 149-152
-        ['BN.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'], #152-158
-        ['CH.1.1', 'XBB.1.5', 'XBB.1.16'],#158-161
-        ['XBB.1.5','XBB.1.16'],#161-170
-        ['XBB.1.16'],#170-188
+        ['B.1', 'B.1.1','B.1.159','B.1.416', 'B.1.160', 'B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4','AY.5','AY.122','AY.125','B.1.617.2','AY.98.1','AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.2.75','BA.5','BE.6','BF.7','BN.1','BQ.1.1','CH.1.1','XBB.1.5','XBB.1.16'],# Start
+        ['B.1.1','B.1.159','B.1.416', 'B.1.160', 'B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4','AY.5','AY.122','AY.125','B.1.617.2','AY.98.1','AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1','BA.2.75','BA.5','BE.6','BF.7','BN.1','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16'],#13-22
+        ['B.1.159', 'B.1.416', 'B.1.160', 'B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.5', 'AY.122','AY.125', 'B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6','BF.7', 'BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],  # 22-24
+        ['B.1.416', 'B.1.160', 'B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.5', 'AY.122', 'AY.125','B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'], #24 -28
+        ['B.1.367', 'B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.5', 'AY.122', 'AY.125','B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'], # 28-34
+        ['B.1.177', 'AY.43', 'B.1.1.7', 'AY.4', 'AY.5', 'AY.122', 'AY.125','B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 34-41
+        ['AY.43', 'B.1.1.7', 'AY.4', 'AY.5', 'AY.122', 'AY.125','B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 41-55
+        ['AY.43', 'AY.4', 'AY.5', 'AY.122', 'AY.125','B.1.617.2', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 55-76
+        ['AY.43', 'AY.4', 'AY.5', 'AY.122', 'AY.125', 'AY.98.1', 'AY.42', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 76-82
+        ['AY.4', 'AY.5', 'AY.122', 'AY.125', 'AY.98.1', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 82-84
+        ['AY.4', 'AY.5', 'AY.122', 'AY.125', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 84-94
+        ['AY.4', 'AY.5', 'BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'], #94-100
+        ['BA.2', 'BA.1', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#100-110
+        ['BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#110-112
+        ['BA.2.9', 'BA.2.12.1', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#112-130
+        ['BA.2.9', 'BA.2.75', 'BA.5', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#130-138
+        ['BA.2.9', 'BA.2.75', 'BE.6', 'BF.7','BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#138-142
+        ['BA.2.75', 'BE.6', 'BF.7', 'BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#142-144
+        ['BE.6', 'BF.7', 'BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],#144-148
+        ['BN.1', 'BQ.1.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'],# 148-152
+        ['BN.1', 'CH.1.1', 'XBB.1.5', 'XBB.1.16'], #152-159
+        ['BN.1', 'XBB.1.5', 'XBB.1.16'],#159-161
+        ['XBB.1.5','XBB.1.16'],#161-168
+        ['XBB.1.16'],#168-188
         []]
 
     dictionary_lineage_week = {
-        14: ['unknown', 'B.1'],
-        29: ['unknown', 'B.1', 'B.1.1'],
-        34: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367'],
-        45: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177'],
-        55: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7'],
-        78: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351'],
-        83: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42'],
-        84: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1'],
-        94: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125'],
-        99: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4'],
-        110: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1'],
-        111: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1','BA.2'],
-        130: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1','BA.2','BA.2.12.1'],
-        133: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1','BA.2.9'],
-        138: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5'],
-        149: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7'],
-        152: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7', 'BQ.1.1'],
-        158: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7', 'BQ.1.1','BN.1'],
-        161: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','CH.1.1','BE.6','BF.7','BQ.1.1','BN.1'],
-        170: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5', 'CH.1.1','XBB.1.5','BE.6','BF.7','BQ.1.1','BN.1'],
-        188: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5', 'CH.1.1', 'XBB.1.5','XBB.1.16','BE.6','BF.7','BQ.1.1','BN.1']
+        13: ['unknown', 'B.1'],
+        22: ['unknown', 'B.1', 'B.1.1'],
+        24: ['unknown', 'B.1', 'B.1.1','B.1.159'],
+        28: ['unknown', 'B.1', 'B.1.1','B.1.159','B.1.160','B.1.416'],
+        34: ['unknown', 'B.1', 'B.1.1', 'B.1.160','B.1.159','B.1.416','B.1.367'],
+        41: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177'],
+        55: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7'],
+        76: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2'],
+        82: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42'],
+        84: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1'],
+        94: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125'],
+        100: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4'],
+        110: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1'],
+        112: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2'],
+        130: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1'],
+        138: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1','BA.5'],
+        142: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1','BA.5', 'BA.2.9'],
+        144: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75'],
+        148: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7'],
+        152: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1'],
+        159: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1'],
+        161: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1'],
+        168: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1','XBB.1.5'],
+        188: ['unknown', 'B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1','XBB.1.5','XBB.1.16']
     }
 
     lineage_know = [
                     [],
                     ['B.1'],
                     ['B.1', 'B.1.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1','BA.2'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7','B.1.617.2','B.1.351','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.92','AY.5','AY.34','AY.4','BA.1','BA.2','BA.2.12.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1','BA.2.9'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7', 'BQ.1.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','BE.6','BF.7', 'BQ.1.1','BN.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5','CH.1.1','BE.6','BF.7','BQ.1.1','BN.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5', 'CH.1.1','XBB.1.5','BE.6','BF.7','BQ.1.1','BN.1'],
-                    ['B.1', 'B.1.1', 'B.1.160','B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2', 'B.1.351', 'AY.43', 'AY.42','AY.98.1', 'AY.122', 'AY.125', 'AY.92', 'AY.5', 'AY.34', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.2.9','BA.5', 'CH.1.1', 'XBB.1.5','XBB.1.16','BE.6','BF.7','BQ.1.1','BN.1']
+                    ['B.1', 'B.1.1','B.1.159'],
+                    ['B.1', 'B.1.1','B.1.159','B.1.160','B.1.416'],
+                    ['B.1', 'B.1.1', 'B.1.160','B.1.159','B.1.416','B.1.367'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1','BA.5'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367','B.1.177','B.1.1.7','B.1.617.2','AY.43','AY.42','AY.98.1','AY.122','AY.125','AY.5','AY.4','BA.1','BA.2','BA.2.12.1','BA.5', 'BA.2.9'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1','XBB.1.5'],
+                    ['B.1', 'B.1.1', 'B.1.160', 'B.1.159', 'B.1.416', 'B.1.367', 'B.1.177', 'B.1.1.7', 'B.1.617.2','AY.43', 'AY.42', 'AY.98.1', 'AY.122', 'AY.125', 'AY.5', 'AY.4', 'BA.1', 'BA.2', 'BA.2.12.1', 'BA.5','BA.2.9','BA.2.75','BE.6','BF.7', 'BQ.1.1','CH.1.1','BN.1','XBB.1.5','XBB.1.16']
                     ]
     return valid_lineage,valid_lineage_prc,dictionary_lineage_week,lineage_know
 
 def retraining_weeks():
-    retraining_week = [14, 29, 34, 45, 55, 78, 83, 84, 94, 99, 110, 111, 130, 133, 138,149,152,158, 161, 170, 188]
-    retraining_week_false_positive = [14, 29, 34, 45, 55, 78, 83, 84, 94, 99, 110, 111, 130, 133, 138,149,152,158, 161, 170, 188, 189]
+    retraining_week = [13, 22, 24, 28, 34, 41, 55, 76, 82, 84, 94, 100, 110, 112, 130, 138, 142, 144, 148, 152, 159, 161, 168, 188]
+    retraining_week_false_positive = [13, 22, 24, 28, 34, 41, 55, 76, 82, 84, 94, 100, 110, 112, 130, 138, 142, 144, 148, 152, 159, 161, 168, 188, 189]
     return retraining_week,retraining_week_false_positive
 
 def write_feature(feature_model, path_to_save, name_txt):
@@ -785,25 +770,52 @@ def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
     return true_positives, false_positives
 
 
-def plot_weekly_precision(precisions, file_path,title):
+# def plot_weekly_precision(precisions, file_path,title):
+#     """
+#     This function takes a list of precision values for each week and creates a line plot using Seaborn.
+#
+#     :param precisions: List of precision values (float or int) for each week.
+#     """
+#     # Create a DataFrame with the precision values
+#     data = pd.DataFrame({'Week': range(len(precisions)), 'Precision': precisions})
+#
+#     # Create a line plot
+#     sns.barplot(x='Week', y='Precision', data=data)
+#
+#     # Add titles and labels
+#     plt.title('Weekly Precision')
+#     plt.xlabel('Week')
+#     plt.ylabel('Precision')
+#
+#     # Save the plot
+#     plt.savefig(file_path+title)
+
+
+def plot_weekly_precision(precisions, file_path, title):
     """
-    This function takes a list of precision values for each week and creates a line plot using Seaborn.
+    This function takes a list of precision values for each week and creates a line plot using Matplotlib.
 
     :param precisions: List of precision values (float or int) for each week.
+    :param file_path: File path to save the plot.
+    :param title: Title for the plot.
     """
     # Create a DataFrame with the precision values
-    data = pd.DataFrame({'Week': range(len(precisions)), 'Precision': precisions})
+    data = pd.DataFrame({'Week': range(1, len(precisions) + 1), 'Precision': precisions})
 
     # Create a line plot
-    sns.barplot(x='Week', y='Precision', data=data)
+    plt.figure(figsize=(10, 6))
+    plt.plot('Week', 'Precision', data=data, marker='o')
 
     # Add titles and labels
-    plt.title('Weekly Precision')
+    plt.title(title)
     plt.xlabel('Week')
     plt.ylabel('Precision')
 
     # Save the plot
-    plt.savefig(file_path+title)
+    plt.savefig(file_path + title + '.png')
+    plt.close()
+
+    return file_path + title + '.png'
 
 
 def true_lineages_week(test_set, true_positives):
@@ -870,13 +882,31 @@ def covered_area(measure_sensitivity):
 
     return final_area, only_area
 
-def write_precision(precision,week,n = 100):
+def write_precision(precision,week):
     # First, we filter the precision values based on the condition.
-    filtered_precision_week = [precision[i] for i in range(len(week)) if week[i] > n] # Paper
+    filtered_precision_paper = [precision[i] for i in range(len(week)) if precision[i] > 0]
+    filtered_precision_week_1 = [precision[i] for i in range(len(week)) if week[i] > 1]
+    filtered_precision_week_20 = [precision[i] for i in range(len(week)) if week[i] > 20]
 
     # Median
-    median_precision_week = np.mean(filtered_precision_week)
-    q1_prec_week, q3_prec_week = np.percentile(filtered_precision_week, [25, 75])
+    median_precision_paper = np.mean(filtered_precision_paper)
+    q1_prec_paper, q3_prec_paper = np.percentile(filtered_precision_paper, [25, 75])
 
-    return [['The median is '+ str(median_precision_week),'The 25th percentile is '+ str(q1_prec_week),'The 75th percentile is '+str(q3_prec_week)]]
+    median_precision_week_1 = np.mean(filtered_precision_week_1)
+    q1_prec_week_1, q3_prec_week_1 = np.percentile(filtered_precision_week_1, [25, 75])
+
+    median_precision_week_20 = np.mean(filtered_precision_week_20)
+    q1_prec_week_20, q3_prec_week_20 = np.percentile(filtered_precision_week_20, [25, 75])
+
+    PPV = (median_precision_week_1 + median_precision_week_20) / 2
+    q1 = (q1_prec_week_1 + q1_prec_week_20) / 2
+    q3 = (q3_prec_week_1 + q3_prec_week_20) / 2
+    return [
+        ['The median is (paper) ' + str(median_precision_paper), 'The 25th percentile is (paper) ' + str(q1_prec_paper),
+         'The 75th percentile is (paper) ' + str(q3_prec_paper)],
+        ['The median is (>1) ' + str(median_precision_week_1), 'The 25th percentile is (>1) ' + str(q1_prec_week_1),
+         'The 75th percentile is (>1) ' + str(q3_prec_week_1)],
+        ['The median is (>n) ' + str(median_precision_week_20), 'The 25th percentile is (>n) ' + str(q1_prec_week_20),
+         'The 75th percentile is (>n) ' + str(q3_prec_week_20)],
+        ['The median is ' + str(PPV), 'The 25th percentile is ' + str(q1), 'The 75th percentile is ' + str(q3)]]
 
