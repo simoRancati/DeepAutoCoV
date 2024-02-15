@@ -5,8 +5,6 @@ import numpy as np
 from collections import Counter
 from scipy.stats import shapiro
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import seaborn as sns
 import csv
 
 
@@ -163,7 +161,8 @@ def weeks_before(summary):
     """
 
     # A predefined NumPy array containing lineages and their respective weeks of recognition.
-    week_identification_np=np.array([['B.1',13],['B.1.1',13],['AD.2',32],['B.1.177',32],['B.1.1.7',46],['AY.4',71],['AY.4.2',96],['AY.4.2.2',102],['BA.1',108],['BA.2',108],['XE',110],['BA.5',126],['BA.5.1',126],['BA.5.2.1',128],['BA.5.2',128],['BQ.1.1',146],['CH.1.1',159],['XBB.1.5',162],['XBB.1.16',176],['EG.5',182]])
+    week_identification_np=np.array([['B.1',6],['B.1.1',6],['AD.2',31],['B.1.177',31],['B.1.1.7',45],['AY.4',69],['AY.4.2',95],['AY.4.2.2',101],['BA.1',108],['BA.2',108],['XE',108],['BA.2.12.1',123],['BA.2.75',131],['BA.2.76',131],['BA.5',132],['BA.5.1',132],['BA.5.2.1',132],['BA.5.2',132],['BN.1',142],['CH.1.1',147],['CH.1.1.1',151],['DV.6',161],['DV.7',168],['XBB.1.5',174],['XBB.1.16',174],['EG.5.1',183],['DV.7.1',190],['EG.5.1.3',193],['FK.1.1',195]])
+    week_growing_np = np.array([['B.1',2],['B.1.1',3],['AD.2',6],['B.1.177',13],['B.1.1.7',11],['AY.4',28],['AY.4.2',24],['AY.4.2.2',23],['BA.1',7],['BA.2',7],['XE',4],['BA.2.12.1',4],['BA.2.75',5],['BA.2.76',3],['BA.5',4],['BA.5.1',4],['BA.5.2.1',4],['BA.5.2',4],['BN.1',2],['CH.1.1',2],['CH.1.1.1',4],['DV.6',11],['DV.7',8],['XBB.1.5',2],['XBB.1.16',2],['EG.5.1',5],['DV.7.1',3],['EG.5.1.3',8],['FK.1.1',4]])
     # Convert the input summary to a NumPy array for easier processing.
     summary_np = np.array(summary)
 
@@ -187,9 +186,12 @@ def weeks_before(summary):
         # Find the index in the predefined array for the current lineage.
         i_w = np.where(week_identification_np == k)[0]
 
+        # Find the index in the predefined array for the current lineage.
+        i_f = np.where(week_growing_np == k)[0]
+
         # Extract recognized weeks for the current lineage.
         week_recognize = np.array(list(map(int, week_identification_np[i_w, 1])))
-
+        interval_10_percent = np.array(list(map(int, week_growing_np[i_f, 1])))
         # Extract predicted counts and anomaly weeks for the current lineage from the summary.
         predicted = np.array(list(map(int, summary_np[i_k, 2])))
         week_an = np.array(list(map(int, summary_np[i_k, 3])))
@@ -203,9 +205,10 @@ def weeks_before(summary):
 
         # Calculate the difference in weeks between recognized and first predicted anomaly week.
         week_before = np.array(week_recognize - week_first_prediction_true)
+        fraction_before = np.array((week_recognize - week_first_prediction_true) / interval_10_percent)
 
         # Append the result to the final_distance list.
-        summary = [k, week_before]
+        summary = [k, week_before, fraction_before]
         final_distance.append(summary)
 
     # Return the list of differences for each lineage.
@@ -397,6 +400,9 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
     autoencoder = tf.keras.Model(inputs=input_layer, outputs=decoder)
     autoencoder.summary()
 
+    # constant egual 2.5
+    k = 2.5
+
     # Callbacks for Model Checkpoint and Early Stopping
     # Set up a checkpoint to save the model and early stopping to prevent overfitting.
     cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.h5",
@@ -416,38 +422,7 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
                         optimizer='adam')
 
     # Return the compiled autoencoder model.
-    return autoencoder
-
-def plot_sma(vector, window_size,path_save):
-    """
-    It calculates the Simple Moving Average (SMA) of a vector and plots it together with the barplot of the vector.
-    The window_size parameter indicates the size of the moving window.
-    """
-    sma = np.convolve(vector, np.ones(window_size) / window_size, mode='valid') #SMA
-
-    fig, ax1 = plt.subplots(figsize=(20, 12))  # Create a figure and a subplot.
-
-    # Plot the bar graph
-    ax1.bar(range(len(vector)), vector, 0.4, color='#66c2a5', alpha=0.7)
-    ax1.plot(range(window_size - 1, len(vector)), sma, 'r')
-    ax1.set_title(str('False positive rate'), fontsize=26)
-    #ax1.grid(False)  # Remove grid lines
-
-    ax1.set_xlabel('Week', fontsize=24)  # Set x-axis label
-    ax1.set_ylabel('False Positive Rate', fontsize=24)  # Set y-axis label
-    ax1.tick_params(axis='both', which='major', labelsize=24)  # Set tick label size
-
-    # Create an inset axes for the boxplot
-    ax2 = inset_axes(ax1, width="40%", height="30%", loc='upper center')
-    data_fp = {"False positive rate": vector}
-    df_fp = pd.DataFrame(data_fp)
-    sns.boxplot(x="False positive rate", data=df_fp, ax=ax2)
-    ax2.set_xlabel("FPR", fontsize=22)
-    ax2.tick_params(axis='x', labelsize=22)  # Increase x-axis label size for boxplot
-    ax2.grid(False)  # Remove grid lines
-    plt.savefig(str(path_save)+'/FalsePositiveRate.png', bbox_inches='tight')
-    plt.show()
-
+    return autoencoder,k
 
 
 def kmers_importance(prediction, true_sequence, kmers):
@@ -613,47 +588,57 @@ def lookup_post(y_test_i_predict, y_test_step_i, knowledge):
 
 def lineages_of_interest():
     ## Valid Lineages
-    valid_lineage_FDLs = ['B.1', 'B.1.1','AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE']  # mettere i lineage che definisco come classe# mettere i lineage che definisco come classe
+    valid_lineage_FDLs = ['B.1', 'B.1.1','AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76']  # mettere i lineage che definisco come classe# mettere i lineage che definisco come classe
 
-    valid_lineage_newFDLS = ['BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5']
+    valid_lineage_newFDLS = ['BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1']
     valid_lineage = valid_lineage_FDLs + valid_lineage_newFDLS
 
     # Valid Lineages PRC
     valid_lineage_prc = [
-        ['B.1', 'B.1.1','AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE', 'BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5'], #0
-        ['AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE', 'BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5'],#13
-        ['B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE', 'BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5'],#32
-        ['AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE', 'BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5'],#46
-        ['AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE', 'BA.5','BA.5.1','BA.5.2.1','BA.5.2','BQ.1.1','CH.1.1','XBB.1.5','EG.5', 'XBB.1.16','EG.5'],#71
-        ['AY.4.2.2', 'BA.1', 'BA.2', 'XE', 'BA.5', 'BA.5.1', 'BA.5.2.1', 'BA.5.2', 'BQ.1.1', 'CH.1.1','XBB.1.5', 'EG.5', 'XBB.1.16', 'EG.5'],#96
-        ['BA.1', 'BA.2', 'XE', 'BA.5', 'BA.5.1', 'BA.5.2.1', 'BA.5.2', 'BQ.1.1', 'CH.1.1', 'XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#102
-        [ 'XE', 'BA.5', 'BA.5.1', 'BA.5.2.1', 'BA.5.2', 'BQ.1.1', 'CH.1.1', 'XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#108
-        ['BA.5', 'BA.5.1', 'BA.5.2.1', 'BA.5.2', 'BQ.1.1', 'CH.1.1', 'XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#110
-        ['BA.5.2.1', 'BA.5.2', 'BQ.1.1', 'CH.1.1', 'XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#126
-        ['BQ.1.1', 'CH.1.1', 'XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#128
-        ['CH.1.1','XBB.1.5','EG.5', 'XBB.1.16', 'EG.5'],#146
-        ['XBB.1.5', 'EG.5', 'XBB.1.16', 'EG.5'],#159
-        ['EG.5', 'XBB.1.16', 'EG.5'],#162
-        ['EG.5'],#176
-        []]#182
+        ['B.1', 'B.1.1','AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'], #0
+        ['AD.2','B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#6
+        ['B.1.1.7', 'AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#31
+        ['AY.4', 'AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#45
+        ['AY.4.2','AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#69
+        ['AY.4.2.2', 'BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#95
+        ['BA.1','BA.2', 'XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#101
+        ['BA.2.12.1','BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#108
+        ['BA.2.75','BA.2.76','BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#123
+        ['BA.5','BA.5.1','BA.5.2.1','BA.5.2','BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#131
+        ['BN.1','CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#132
+        ['CH.1.1','CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#142
+        ['CH.1.1,1','DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#147
+        ['DV.6','DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#155
+        ['DV.7','XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#161
+        ['XBB.1.5','XBB.1.16','EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#168
+        ['EG.5.1','DV.7.1', 'EG.5.1.3','FK.1.1'],#174
+        ['DV.7.1', 'EG.5.1.3','FK.1.1'],#183
+        ['EG.5.1.3', 'FK.1.1'],#190
+        ['FK.1.1'],#193
+        []]#195
 
     dictionary_lineage_week = {
-        13: ['unknown', 'B.1','B.1.1'],
-        32: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177'],
-        46: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7'],
-        71: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4'],
-        96: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2'],
-        102: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2'],
-        108: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1'],
-        110: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE'],
-        126: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5'],
-        128: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2'],
-        146: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1'],
-        159: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1'],
-        162: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5'],
-        176: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16'],
-        182: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16', 'EG.5'],
-         }
+        6: ['unknown', 'B.1','B.1.1'],
+        31: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177'],
+        45: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7'],
+        69: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4'],
+        95: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2'],
+        101: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2'],
+        108: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE'],
+        123: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1'],
+        131: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76'],
+        132: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2'],
+        142: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1'],
+        147: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1'],
+        155: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1'],
+        161: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1','DV.6'],
+        168: ['unknown', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1','DV.6','DV.7'],
+        174: ['unknown', 'B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1','CH.1.1.1', 'DV.6', 'DV.7','XBB.1.5','XBB.1.16'],
+        183: ['unknown', 'B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1','CH.1.1.1', 'DV.6', 'DV.7','XBB.1.5','XBB.1.16','EG.5.1'],
+        190: ['unknown', 'B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1','CH.1.1.1', 'DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1','DV.7.1'],
+        193: ['unknown', 'B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1','CH.1.1.1', 'DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1', 'DV.7.1','EG.5.1.3'],
+        195: ['unknown', 'B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1','CH.1.1.1', 'DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1', 'DV.7.1','EG.5.1.3','FK.1.1']
+    }
 
     lineage_know = [
                     [],
@@ -663,21 +648,26 @@ def lineages_of_interest():
                     ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4'],
                     ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2'],
                     ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1'],
                     ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16'],
-                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BQ.1.1', 'CH.1.1','XBB.1.5', 'XBB.1.16', 'EG.5']
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1'],
+                    ['B.1', 'B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1','DV.6'],
+                    ['B.1','B.1.1','AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1','XE','BA.2.12.1','BA.2.75','BA.2.76','BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2','BN.1','CH.1.1','CH.1.1.1','DV.6','DV.7'],
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1', 'CH.1.1.1','DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16'],
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1', 'CH.1.1.1','DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1'],
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1', 'CH.1.1.1','DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1', 'DV.7.1'],
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1', 'CH.1.1.1','DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1', 'DV.7.1', 'EG.5.1.3'],
+                    ['B.1', 'B.1.1', 'AD.2', 'B.1.177', 'B.1.1.7', 'AY.4', 'AY.4.2', 'AY.4.2.2', 'BA.2', 'BA.1', 'XE','BA.2.12.1', 'BA.2.75', 'BA.2.76', 'BA.5.1', 'BA.5', 'BA.5.2.1', 'BA.5.2', 'BN.1', 'CH.1.1', 'CH.1.1.1','DV.6', 'DV.7', 'XBB.1.5', 'XBB.1.16', 'EG.5.1', 'DV.7.1', 'EG.5.1.3', 'FK.1.1']
                       ]
     return valid_lineage,valid_lineage_prc,dictionary_lineage_week,lineage_know
 
 def retraining_weeks():
-    retraining_week = [13, 32, 46, 71, 96, 102, 108, 110, 126, 128, 146, 159, 162, 176, 182]
-    retraining_week_false_positive = [13, 32, 46, 71, 96, 102, 108, 110, 126, 128, 146, 159, 162, 176, 182,195]
+    retraining_week = [6, 31, 45, 69, 95, 101, 108, 123, 131, 132, 142, 147, 155, 161, 168, 174, 183, 190, 193,195]
+    retraining_week_false_positive = [6, 31, 45, 69, 95, 101, 108, 123, 131, 132, 142, 147, 155, 161, 168, 174, 183, 190, 193,195]
     return retraining_week,retraining_week_false_positive
 
 def write_feature(feature_model, path_to_save, name_txt):
@@ -766,25 +756,31 @@ def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
     return true_positives, false_positives
 
 
-def plot_weekly_precision(precisions, file_path,title):
+def plot_weekly_precision(precisions, file_path, title):
     """
-    This function takes a list of precision values for each week and creates a line plot using Seaborn.
+    This function takes a list of precision values for each week and creates a line plot using Matplotlib.
 
     :param precisions: List of precision values (float or int) for each week.
+    :param file_path: File path to save the plot.
+    :param title: Title for the plot.
     """
     # Create a DataFrame with the precision values
-    data = pd.DataFrame({'Week': range(len(precisions)), 'Precision': precisions})
+    data = pd.DataFrame({'Week': range(1, len(precisions) + 1), 'Precision': precisions})
 
     # Create a line plot
-    sns.barplot(x='Week', y='Precision', data=data)
+    plt.figure(figsize=(10, 6))
+    plt.plot('Week', 'Precision', data=data, marker='o')
 
     # Add titles and labels
-    plt.title('Weekly Precision')
+    plt.title(title)
     plt.xlabel('Week')
     plt.ylabel('Precision')
 
     # Save the plot
-    plt.savefig(file_path+title)
+    plt.savefig(file_path + title + '.png')
+    plt.close()
+
+    return file_path + title + '.png'
 
 
 def true_lineages_week(test_set, true_positives):
@@ -853,11 +849,30 @@ def covered_area(measure_sensitivity):
 
 def write_precision(precision,week,n = 100):
     # First, we filter the precision values based on the condition.
-    filtered_precision_week = [precision[i] for i in range(len(week)) if week[i] > n] # Paper
+    filtered_precision_paper = [precision[i] for i in range(len(week)) if precision[i] > 0]
+    filtered_precision_week_1 = [precision[i] for i in range(len(week)) if week[i] > 1]
+    filtered_precision_week_20 = [precision[i] for i in range(len(week)) if week[i] > n]
 
     # Median
-    median_precision_week = np.mean(filtered_precision_week)
-    q1_prec_week, q3_prec_week = np.percentile(filtered_precision_week, [25, 75])
+    median_precision_paper = np.mean(filtered_precision_paper)
+    q1_prec_paper, q3_prec_paper = np.percentile(filtered_precision_paper, [25, 75])
 
-    return [['The median is '+ str(median_precision_week),'The 25th percentile is '+ str(q1_prec_week),'The 75th percentile is '+str(q3_prec_week)]]
+    median_precision_week_1 = np.mean(filtered_precision_week_1)
+    q1_prec_week_1, q3_prec_week_1 = np.percentile(filtered_precision_week_1, [25, 75])
+
+    median_precision_week_20 = np.mean(filtered_precision_week_20)
+    q1_prec_week_20, q3_prec_week_20 = np.percentile(filtered_precision_week_20, [25, 75])
+
+    PPV = (median_precision_week_1 + median_precision_week_20) / 2
+    q1 = (q1_prec_week_1 + q1_prec_week_20) / 2
+    q3 = (q3_prec_week_1 + q3_prec_week_20) / 2
+
+    return [
+        ['The median is (paper) ' + str(median_precision_paper), 'The 25th percentile is (paper) ' + str(q1_prec_paper),
+         'The 75th percentile is (paper) ' + str(q3_prec_paper)],
+        ['The median is (>1) ' + str(median_precision_week_1), 'The 25th percentile is (>1) ' + str(q1_prec_week_1),
+         'The 75th percentile is (>1) ' + str(q3_prec_week_1)],
+        ['The median is (>n) ' + str(median_precision_week_20), 'The 25th percentile is (>n) ' + str(q1_prec_week_20),
+         'The 75th percentile is (>n) ' + str(q3_prec_week_20)],
+        ['The median is ' + str(PPV), 'The 25th percentile is ' + str(q1), 'The 75th percentile is ' + str(q3)]]
 
