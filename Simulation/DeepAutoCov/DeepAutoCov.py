@@ -29,6 +29,7 @@ def main(options):
     precision_overall = [] # Store precision overall
     lineages_in_week = [] # Store numer of FDLs during the simulation
     n = options.numb_weeks # Number of Simulation Weeks (Example : if you have two hundred simulation weeks the n is equal a 199)
+
     ## Path to read the dataset
     dir_week =str(options.path_drive)
 
@@ -109,7 +110,7 @@ def main(options):
     all_combo = list(ParameterGrid(p_grid))
 
     with strategy.scope(): # Using GPU
-        autoencoder = model(input_dim,encoding_dim,hidden_dim_1,hidden_dim_2,hidden_dim_3,hidden_dim_4,hidden_dim_5,reduction_factor,path_save_file) # Project the Deep Learning Model.
+        autoencoder,th = model(input_dim,encoding_dim,hidden_dim_1,hidden_dim_2,hidden_dim_3,hidden_dim_4,hidden_dim_5,reduction_factor,path_save_file) # Project the Deep Learning Model.
     for combo in all_combo[0:1]:
         combo
         logging.info("---> Autoencoder - Param: " + str(combo))
@@ -150,7 +151,7 @@ def main(options):
                 batch_size = 512
                 input_dim = train_model_value.shape[1]
                 with strategy.scope():
-                    autoencoder = model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hidden_dim_4, hidden_dim_5,
+                    autoencoder,th = model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hidden_dim_4, hidden_dim_5,
                           reduction_factor, path_save_file) # Creation of the AutoEncoder model.
                 history = autoencoder_training_GPU(autoencoder, train_model_value, train_model_value, nb_epoch, batch_size) # retraining the model.
                 autoencoder.save(path_save_file + '/Autoencoder_models.h5')
@@ -186,7 +187,7 @@ def main(options):
             ## Threshold
             mse = np.mean(np.power(test_step_i - test_x_predictions, 2), axis=1) # Mean Square Error (MSE).
             error_df = pd.DataFrame({'Reconstruction_error': mse})
-            threshold_fixed = np.mean(mse_tr) + 1.5 * np.std(mse_tr) # Threshold for anomaly detection.
+            threshold_fixed = np.mean(mse_tr) + th * np.std(mse_tr) # Threshold for anomaly detection.
             y_test_i_predict = [-1 if e >= threshold_fixed else 1 for e in error_df.Reconstruction_error.values]
             y_test_i_predict = np.array(y_test_i_predict)
 
@@ -328,7 +329,7 @@ if __name__ == "__main__":
                       help="red_factor", default=1e-7)
 
     parser.add_option("-n", "--number weeks ", dest="numb_weeks",
-                      help="simulation weeks", default=2)
+                      help="simulation weeks", default=199)
 
     (options, args) = parser.parse_args()
     main(options)

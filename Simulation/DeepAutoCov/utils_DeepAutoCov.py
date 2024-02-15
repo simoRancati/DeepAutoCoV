@@ -58,6 +58,7 @@ def load_data(dir_dataset, week_range):
     # Concatenate all DataFrames in df_list and return along with the week list (w_list).
     return pd.concat(df_list), w_list
 
+
 def get_lineage_class(metadata, id_list):
     """
     This function extracts the Pango lineage names for a given list of IDs from the metadata.
@@ -85,6 +86,7 @@ def get_lineage_class(metadata, id_list):
     # Return the compiled list of lineage names.
     return variant_name_list
 
+
 def map_lineage_to_finalclass(class_list, non_neutral):
     """
     This function maps a list of lineages to a final class based on their neutrality.
@@ -111,6 +113,7 @@ def map_lineage_to_finalclass(class_list, non_neutral):
 
     # Return the list containing the final classification for each lineage.
     return final_class_list
+
 
 def autoencoder_training_GPU(autoencoder, train1, train2, nb_epoch, batch_size):
     """
@@ -151,6 +154,7 @@ def autoencoder_training_GPU(autoencoder, train1, train2, nb_epoch, batch_size):
     # Return the history object capturing the training progress.
     return history
 
+
 def weeks_before(summary):
     """
     This function calculates the number of weeks before each lineage in the summary was first predicted
@@ -164,7 +168,7 @@ def weeks_before(summary):
     """
 
     # A predefined NumPy array containing lineages and their respective weeks of recognition.
-    week_identification_np=np.array([['Lineages',10]])
+    week_identification_np = np.array([['Lineages', 10]])
     # Convert the input summary to a NumPy array for easier processing.
     summary_np = np.array(summary)
 
@@ -212,38 +216,6 @@ def weeks_before(summary):
     # Return the list of differences for each lineage.
     return final_distance
 
-def find_lineage_per_week(dataset, week, dictionary_lineage_weeks):
-    """
-    This function filters a dataset to retrieve rows corresponding to specific lineages for a given week.
-
-    Parameters:
-    - dataset: The dataset to be filtered, assumed to be a NumPy array.
-    - week: The specific week for which lineages are to be filtered.
-    - dictionary_lineage_weeks: A dictionary mapping weeks to lineages.
-
-    Returns:
-    - results: A NumPy array containing the filtered dataset rows.
-    """
-
-    # Assume that the lineage column is the last column in the dataset.
-    lineage_column = dataset.shape[1] - 1
-
-    # Extract the lineages for the specified week from the dictionary.
-    weekly_lineages = dictionary_lineage_weeks[week]
-
-    # Create an empty NumPy array to store the results.
-    results = np.empty((0, dataset.shape[1]), dtype=dataset.dtype)
-
-    # Iterate through the dataset and select only the rows with lineages that correspond to the specified week.
-    for lineage in weekly_lineages:
-        # Find the rows in the dataset where the lineage matches.
-        selected_rows = dataset[np.where(dataset[:, lineage_column] == lineage)]
-
-        # Stack the selected rows onto the results array.
-        results = np.vstack((results, selected_rows))
-
-    # Return the array containing the selected rows.
-    return results
 
 def find_lineage_per_week(dataset, week, dictionary_lineage_weeks):
     """
@@ -277,6 +249,41 @@ def find_lineage_per_week(dataset, week, dictionary_lineage_weeks):
 
     # Return the array containing the selected rows.
     return results
+
+
+def find_lineage_per_week(dataset, week, dictionary_lineage_weeks):
+    """
+    This function filters a dataset to retrieve rows corresponding to specific lineages for a given week.
+
+    Parameters:
+    - dataset: The dataset to be filtered, assumed to be a NumPy array.
+    - week: The specific week for which lineages are to be filtered.
+    - dictionary_lineage_weeks: A dictionary mapping weeks to lineages.
+
+    Returns:
+    - results: A NumPy array containing the filtered dataset rows.
+    """
+
+    # Assume that the lineage column is the last column in the dataset.
+    lineage_column = dataset.shape[1] - 1
+
+    # Extract the lineages for the specified week from the dictionary.
+    weekly_lineages = dictionary_lineage_weeks[week]
+
+    # Create an empty NumPy array to store the results.
+    results = np.empty((0, dataset.shape[1]), dtype=dataset.dtype)
+
+    # Iterate through the dataset and select only the rows with lineages that correspond to the specified week.
+    for lineage in weekly_lineages:
+        # Find the rows in the dataset where the lineage matches.
+        selected_rows = dataset[np.where(dataset[:, lineage_column] == lineage)]
+
+        # Stack the selected rows onto the results array.
+        results = np.vstack((results, selected_rows))
+
+    # Return the array containing the selected rows.
+    return results
+
 
 def find_indices_lineage_per_week(lineage_column, week, dictionary_lineage_weeks):
     """
@@ -307,7 +314,6 @@ def find_indices_lineage_per_week(lineage_column, week, dictionary_lineage_weeks
 
     # Return the array of indices.
     return indices_rows_np
-
 
 
 def test_normality(autoencoder, train_model):
@@ -345,7 +351,9 @@ def test_normality(autoencoder, train_model):
     # Return the p-value and the calculated MSE.
     return p_value, mse
 
-def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hidden_dim_4, hidden_dim_5, reduction_factor, path_salvataggio_file):
+
+def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hidden_dim_4, hidden_dim_5,
+          reduction_factor, path_salvataggio_file):
     """
     This function creates and returns an autoencoder model.
     Parameters:
@@ -366,7 +374,8 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
     # Encoder
     # Construct the encoder part of the autoencoder using dense layers, dropout for regularization,
     # and various activation functions.
-    encoder = tf.keras.layers.Dense(encoding_dim, activation="tanh", activity_regularizer=tf.keras.regularizers.l2(reduction_factor))(input_layer)
+    encoder = tf.keras.layers.Dense(encoding_dim, activation="tanh",
+                                    activity_regularizer=tf.keras.regularizers.l2(reduction_factor))(input_layer)
     encoder = tf.keras.layers.Dropout(0.3)(encoder)
     encoder = tf.keras.layers.Dense(hidden_dim_1, activation='relu')(encoder)
     encoder = tf.keras.layers.Dense(hidden_dim_2, activation='relu')(encoder)
@@ -380,6 +389,9 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
     latent_with_noise = tf.keras.layers.Lambda(
         lambda x: x + noise_factor * tf.keras.backend.random_normal(shape=tf.shape(x)))(latent)
 
+    # costant egual 2.5
+    th = 2.5
+
     # Decoder
     # Build the decoder part of the autoencoder to reconstruct the input from the encoded representation.
     decoder = tf.keras.layers.Dense(hidden_dim_4, activation='relu')(latent_with_noise)
@@ -391,7 +403,8 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
 
     # Output Layer
     # Define the output layer to reconstruct the original input.
-    decoder = tf.keras.layers.Dense(input_dim, activation='tanh', activity_regularizer=tf.keras.regularizers.l2(reduction_factor))(decoder)
+    decoder = tf.keras.layers.Dense(input_dim, activation='tanh',
+                                    activity_regularizer=tf.keras.regularizers.l2(reduction_factor))(decoder)
 
     # Autoencoder Model
     # Define the autoencoder model that maps the input to its reconstruction.
@@ -417,14 +430,15 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
                         optimizer='adam')
 
     # Return the compiled autoencoder model.
-    return autoencoder
+    return autoencoder, th
 
-def plot_sma(vector, window_size,path_save):
+
+def plot_sma(vector, window_size, path_save):
     """
     It calculates the Simple Moving Average (SMA) of a vector and plots it together with the barplot of the vector.
     The window_size parameter indicates the size of the moving window.
     """
-    sma = np.convolve(vector, np.ones(window_size) / window_size, mode='valid') #SMA
+    sma = np.convolve(vector, np.ones(window_size) / window_size, mode='valid')  # SMA
 
     fig, ax1 = plt.subplots(figsize=(20, 12))  # Create a figure and a subplot.
 
@@ -432,7 +446,7 @@ def plot_sma(vector, window_size,path_save):
     ax1.bar(range(len(vector)), vector, 0.4, color='#66c2a5', alpha=0.7)
     ax1.plot(range(window_size - 1, len(vector)), sma, 'r')
     ax1.set_title(str('False positive rate'), fontsize=26)
-    #ax1.grid(False)  # Remove grid lines
+    # ax1.grid(False)  # Remove grid lines
 
     ax1.set_xlabel('Week', fontsize=24)  # Set x-axis label
     ax1.set_ylabel('False Positive Rate', fontsize=24)  # Set y-axis label
@@ -446,9 +460,8 @@ def plot_sma(vector, window_size,path_save):
     ax2.set_xlabel("FPR", fontsize=22)
     ax2.tick_params(axis='x', labelsize=22)  # Increase x-axis label size for boxplot
     ax2.grid(False)  # Remove grid lines
-    plt.savefig(str(path_save)+'/FalsePositiveRate.png', bbox_inches='tight')
+    plt.savefig(str(path_save) + '/FalsePositiveRate.png', bbox_inches='tight')
     plt.show()
-
 
 
 def kmers_importance(prediction, true_sequence, kmers):
@@ -543,6 +556,7 @@ def selection_kmers(AE_prediction, True_sequences, kmers, AE_classes, identifier
         # Write each row of the summary to the CSV file.
         csvwriter.writerows(summary)
 
+
 def lookup(y_test_i_predict, y_test_step_i, knowledge, mse):
     """
     This function modifies predictions and Mean Squared Error (MSE) values based on prior knowledge of lineages,
@@ -581,6 +595,7 @@ def lookup(y_test_i_predict, y_test_step_i, knowledge, mse):
     # Return the modified list of predictions and MSE values.
     return prediction, mse
 
+
 def lookup_post(y_test_i_predict, y_test_step_i, knowledge):
     """
     This function modifies predictions based on prior knowledge of lineages,
@@ -612,33 +627,35 @@ def lookup_post(y_test_i_predict, y_test_step_i, knowledge):
     # Return the modified list of predictions.
     return prediction
 
+
 def lineages_of_interest():
     ## Valid Lineages
-    valid_lineage_FDLs = [] # Valid lineages that consider important to discover
+    valid_lineage_FDLs = []  # Valid lineages that consider important to discover
 
-    valid_lineage_newFDLS = [] # Add additional lineages (at user's discretion)
+    valid_lineage_newFDLS = []  # Add additional lineages (at user's discretion)
     valid_lineage = valid_lineage_FDLs + valid_lineage_newFDLS
 
     # Valid Lineages PRC
-    valid_lineage_prc = [[]] # For each week of retraining the valid lineages change
+    valid_lineage_prc = [[]]  # For each week of retraining the valid lineages change
 
     dictionary_lineage_week = {
     }
 
     lineage_know = [
-                    ] # Lineage that a certain instant (retraining weeks) become know by pubblic health authority
-    return valid_lineage,valid_lineage_prc,dictionary_lineage_week,lineage_know
+    ]  # Lineage that a certain instant (retraining weeks) become know by pubblic health authority (Database lineages know)
+    return valid_lineage, valid_lineage_prc, dictionary_lineage_week, lineage_know
+
 
 def retraining_weeks():
-    retraining_week = [] # [weeks of retraining]
-    retraining_week_false_positive = [] # [weeks of retraining,the last week]
-    return retraining_week,retraining_week_false_positive
+    retraining_week = []  # [weeks of retraining (third time when a lineage reach the 10 % of frequency)]
+    retraining_week_false_positive = []  # [weeks of retraining (third time when a lineage reach the 10 % of frequency), the last week]
+    return retraining_week, retraining_week_false_positive
+
 
 def write_feature(feature_model, path_to_save, name_txt):
-
     # Function to transform and write the content to the output file
-    def write_feat(feature,path_to_save,name_file):
-        with open(path_to_save+name_file, "w") as file:
+    def write_feat(feature, path_to_save, name_file):
+        with open(path_to_save + name_file, "w") as file:
             for elemento in feature:
                 file.write(str(elemento) + "\n")
 
@@ -651,19 +668,20 @@ def write_feature(feature_model, path_to_save, name_txt):
                 for element in elements:
                     file.write(element + '\n')
 
-    write_feat(feature_model,path_to_save,name_txt)
+    write_feat(feature_model, path_to_save, name_txt)
     # The path to the input file, which contains the original data
     # = path_to_save + name_txt # Replace with your input file path
 
     # The path to the output file, which will contain the transformed data
-    #output_file_path = path_to_save + name_txt  # Replace with your desired output file path
+    # output_file_path = path_to_save + name_txt  # Replace with your desired output file path
 
     # Read the original content from the input file
-    #with open(input_file_path, 'r') as file:
-        #original_content = file.readlines()
+    # with open(input_file_path, 'r') as file:
+    # original_content = file.readlines()
 
     # Perform the transformation and write to the output file
-    #transform_and_write_content(original_content, output_file_path)
+    # transform_and_write_content(original_content, output_file_path)
+
 
 def count_true_and_false_positives_top100(predicted_lineages, known_lineages):
     """
@@ -691,6 +709,7 @@ def count_true_and_false_positives_top100(predicted_lineages, known_lineages):
             false_positives += 1
 
     return true_positives, false_positives
+
 
 def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
     """
@@ -720,7 +739,7 @@ def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
     return true_positives, false_positives
 
 
-def plot_weekly_precision(precisions, file_path,title):
+def plot_weekly_precision(precisions, file_path, title):
     """
     This function takes a list of precision values for each week and creates a line plot using Seaborn.
 
@@ -738,7 +757,7 @@ def plot_weekly_precision(precisions, file_path,title):
     plt.ylabel('Precision')
 
     # Save the plot
-    plt.savefig(file_path+title)
+    plt.savefig(file_path + title)
 
 
 def true_lineages_week(test_set, true_positives):
@@ -764,6 +783,7 @@ def true_lineages_week(test_set, true_positives):
 
     return count
 
+
 def covered_area(measure_sensitivity):
     """
     Calculate the covered area for different variants over weeks based on sensitivity measurements.
@@ -787,15 +807,16 @@ def covered_area(measure_sensitivity):
     for k in variant_dict.keys():
         if k == 'unknown':
             continue
-        indices_k = np.where(measure_sensitivity_np == k)[0] # Find indices where my variant is
+        indices_k = np.where(measure_sensitivity_np == k)[0]  # Find indices where my variant is
         total = np.array(list(map(int, measure_sensitivity_np[indices_k, 1])))
         predicted = np.array(list(map(int, measure_sensitivity_np[indices_k, 2])))
         week_analysis = np.array(list(map(int, measure_sensitivity_np[indices_k, 3])))
-        first_prediction_index = np.where(predicted > 0)[0] # Find index of first prediction
+        first_prediction_index = np.where(predicted > 0)[0]  # Find index of first prediction
         if len(first_prediction_index) == 0:
             continue
         first_prediction_week = min(list(week_analysis[first_prediction_index]))
-        index_first_prediction_week = np.where(week_analysis == first_prediction_week) # Find the index of the week and sum the second column
+        index_first_prediction_week = np.where(
+            week_analysis == first_prediction_week)  # Find the index of the week and sum the second column
         total_lineage = total[index_first_prediction_week]
         all_weeks_indices = np.where(Weeks == first_prediction_week)
         total_seq_week = np.sum(total_official[all_weeks_indices])
@@ -805,13 +826,14 @@ def covered_area(measure_sensitivity):
 
     return final_area, only_area
 
-def write_precision(precision,week,n):
+
+def write_precision(precision, week, n=100):
     # First, we filter the precision values based on the condition.
-    filtered_precision_week_100 = [precision[i] for i in range(len(week)) if week[i] > n] # Results of Paper
+    filtered_precision_week = [precision[i] for i in range(len(week)) if week[i] > n]  # Paper
 
     # Median
-    median_precision_week_20 = np.mean(filtered_precision_week_100)
-    q1_prec_week_20, q3_prec_week_20 = np.percentile(filtered_precision_week_100, [25, 75])
+    median_precision_week = np.mean(filtered_precision_week)
+    q1_prec_week, q3_prec_week = np.percentile(filtered_precision_week, [25, 75])
 
-    return [['The median is'+ str(median_precision_week_20),'The 25th percentile is (>n) '+ str(q1_prec_week_20),'The 75th percentile is (>n) '+str(q3_prec_week_20)]]
-
+    return [['The median is ' + str(median_precision_week), 'The 25th percentile is ' + str(q1_prec_week),
+             'The 75th percentile is ' + str(q3_prec_week)]]
