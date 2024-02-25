@@ -58,6 +58,12 @@ Optional:
   a) csv file for each sequence (<code>EPI_ISL_6331230.csv</code>).In the first raw contains all the k-mers possible.    The second, instead, contains a sequence of 0/1 that indicates the presence or absence of k-mers.
   b) txt File (<code>week_dataset.txt</code>) that contains the identificators and the sequence of 0/1
 
+
+III)<code>Supplementary Information Preprocessing.md</code> contains additional information about the pre-processing performed on the data. 
+
+
+IV)
+
 ## Simulation
 This repository hosts the code required to replicate simulations for various datasets, including Global, United States of America, United Kingdom, Denmark, and France. Within each dataset's folder, you will find two scripts:
 
