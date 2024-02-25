@@ -62,7 +62,7 @@ Optional:
 III)<code>Supplementary Information Preprocessing.md</code> contains additional information about the pre-processing performed on the data. 
 
 
-IV)
+IV) The repository <code>Identifier</code> contains information (Accession ID, Collection date, Pango lineage, Location) about the sequences used during the simulation. In particular this repository contains the lineages filtered by <code>First_Filtration.R</code>.  
 
 ## Simulation
 This repository hosts the code required to replicate simulations for various datasets, including Global, United States of America, United Kingdom, Denmark, and France. Within each dataset's folder, you will find two scripts:
