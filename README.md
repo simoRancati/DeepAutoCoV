@@ -5,6 +5,33 @@ Forecasting dominance of SARS-CoV-2 lineages by anomaly detection using deep Aut
 
 Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Deep Learning AutoEncoder and to perform the simulation are located in the model folder. Scripts to generate the dataset and the feature representations are within the Feature_Extraction folder.
 
+## Requirements and installation
+You can create a conda env with all the required packages thanks to the [deepautocov_env.yml](predict/deepautocov_env.yml) file
+
+<code>conda env create -f deepautocov_env.yml</code>
+
+To activate the conda env:
+
+<code>conda activate deepautocov_env</code>
+
+**Dependencies**
+DeepAutoCov mainly depends on the **Python** scientific stack: 
+1. pandas <code>pip install pandas==1.5.3</code>
+2. numpy <code>pip install numpy==1.24.1</code>
+3. statistics <code>pip install statistics==1.0.3.5</code>
+4. tensorflow <code>pip install tensorflow==2.14.0</code>
+5. scipy <code>pip install scipy==1.10.1</code>
+6. matplotlib <code>pip install matplotlib==3.8.3</code>
+7. scikit-learn <code>pip install scikit-learn==1.2.1</code>
+
+In pre-processing, libraries belonging to the **R language** are also required:
+1. BiocManger <code>install.packages("BiocManager")</code>
+2. Biostrings <code>BiocManager::install("Biostrings")</code>
+3. stringr <code>install.packages("stringr")</code>
+4. vroom <code>install.packages("vroom")</code>
+
+Python version <code>3.9</code> and R <code>4.2.2</code> are required. 
+
 ## Feature Extraction
 The files to create the dataset is <code>First_Filtration.R</code> and <code>Data_filtration_kmers.py</code>.
 
