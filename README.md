@@ -15,6 +15,7 @@ To activate the conda env:
 <code>conda activate deepautocov_env</code>
 
 **Dependencies**
+
 DeepAutoCov mainly depends on the **Python** scientific stack: 
 1. pandas <code>pip install pandas==1.5.3</code>
 2. numpy <code>pip install numpy==1.24.1</code>
