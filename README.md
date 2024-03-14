@@ -120,7 +120,7 @@ Optional:
 
 -m fraction of kmers that are different from 0 to mantain during the simulation (<code>default value: 0.01</code>);
 
--e number of epochs (<code>default value: 300</code>);
+-e number of epochs (<code>default value: 50</code>);
 
 -b batch size for the first week (<code>default value: 256</code>);
 
