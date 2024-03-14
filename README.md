@@ -6,7 +6,7 @@ Forecasting dominance of SARS-CoV-2 lineages by anomaly detection using deep Aut
 Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Deep Learning AutoEncoder and to perform the simulation are located in the model folder. Scripts to generate the dataset and the feature representations are within the Feature_Extraction folder.
 
 ## Requirements and installation
-You can create a conda env with all the required packages thanks to the [deepautocov_env.yml](env/deepautocov_env.yml) file
+You can create a conda env with all the required **Python** packages thanks to the [deepautocov_env.yml](env/deepautocov_env.yml) file
 
 <code>conda env create -f deepautocov_env.yml</code>
 
