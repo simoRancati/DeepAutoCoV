@@ -1,0 +1,9 @@
+name: deepautocov_env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+prefix: /home/bms-bioinfo/anaconda3/envs/deepautocov_env
+
