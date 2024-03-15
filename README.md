@@ -42,9 +42,9 @@ I)<code>First_Filtration_codeline.R</code> serves as the primary tool for proces
 Mandatory:
 
 
--Spikes.fasta: path where the input fasta file is stored (<code>GISAID FASTA file</code>);
+-Spikes.fasta: path where the input fasta file is stored (<code>[GISAID FASTA file](https://gisaid.org/)</code>);
 
--metadataset.tsv: path where the input metadata (tsv) is stored (<code>GISAID TSV file</code>): Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
+-metadataset.tsv: path where the input metadata (tsv) is stored (<code>[GISAID TSV file](https://gisaid.org/)</code>): Sequences and metadata should be in the same order. All columns are necessary and must be in the same order as in the example file, i.e.: <code> Virus name, Last vaccinated, Passage details/history, Type, Accession ID, Collection date, Location, Additional location information, Sequence length, Host, Patient age, Gender, Clade, Pango lineage, Pango version, Variant, AA Substitutions, Submission date, Is reference?, Is complete?, Is high coverage?, Is low coverage?, N-Content, GC-Content</code>
 
 -spikes.fasta: path where the output fasta file is saved;
 
