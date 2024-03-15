@@ -90,7 +90,7 @@ Optional:
 III)<code>Supplementary Information Preprocessing.md</code> contains additional information about the pre-processing performed on the data. 
 
 
-IV) The repository <code>Identifier</code> contains information (Accession ID, Collection date, Pango lineage, Location) about the sequences used during the simulation. In particular this repository contains the <code>[.zip files](FeatureExtraction/Identifier/)</code> about the information of lineages filtered by <code>[First_Filtration_codeline.R](FeatureExtraction/First_Filtration_codeline.R)</code>. Each .zip file links to CSV file that have four columns: 
+IV) The repository <code>Identifier</code> contains information (Accession ID, Collection date, Pango lineage, Location) about the sequences used during the simulation. In particular this repository contains the <code>.zip files</code> about the information of lineages filtered by <code>First_Filtration_codeline.R</code>. Each .zip file links to CSV file that have four columns: 
 
 1) <code>Accession ID</code>: Unique GISAID identifier for each sequence;
 2) <code>Collection date</code>: Specific date of sequence collection;
