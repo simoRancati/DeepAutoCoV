@@ -5,7 +5,7 @@ import statistics as st
 # example of continent = ['Denmark', 'France', 'United Kingdom', 'USA', '/', 'Denmark']
 
 def main(options):
-    continent=[str(options.continent_list)]
+    continent=options.continent_list
     for l in continent:
         print("\033[1m Read File Metadata and Fasta \033[0m")
         sequences,headers = read_protein_sequences_header(str(options.fasta_path)) # Read the FASTA file (sequences) that contains the aminoacid sequences.
@@ -42,10 +42,10 @@ def main(options):
         for sequence in sequences_nation:
             Length.append(len(sequence)) # This vector stores the length of each sequence.
 
-
+        print(Length)
         print('\033[1m Filter sequences with length less than ' + str(options.min_length) +'\033[0m')
-        sequences_filtering_min_limit = [x for i, x in enumerate(sequences_nation) if Length[i] >= options.min_length] # Select sequences that are longer than a specified threshold (an integer value set via a command-line parameter). Sequences shorter than this threshold are considered incorrect.
-        index = [i for i, x in enumerate(Length) if x >= options.min_length] # Compute the indices of valid sequences.
+        sequences_filtering_min_limit = [x for i, x in enumerate(sequences_nation) if Length[i] >= int(options.min_length)] # Select sequences that are longer than a specified threshold (an integer value set via a command-line parameter). Sequences shorter than this threshold are considered incorrect.
+        index = [i for i, x in enumerate(Length) if x >= int(options.min_length)] # Compute the indices of valid sequences.
         print('\033[1m Update the Metadata file \033[0m')
         metadata_filter_min_limit = metadata_nation[index] # Update the dataset.
         Dimensione_fil_min_limit = len(sequences_filtering_min_limit) # Compute the number of valid sequences in the dataset.
