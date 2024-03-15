@@ -34,9 +34,9 @@ In pre-processing, libraries belonging to the **R language** are also required:
 Python version <code>3.9</code> and R <code>4.2.3</code> are required. 
 
 ## Feature Extraction
-The files to create the dataset is <code>First_Filtration.R</code> and <code>Data_filtration_kmers.py</code>.
+The files to create the dataset is [First_Filtration_codeline.R](Feature Extraction/First_Filtration_codeline.R) and [Data_filtration_kmers.py](Feature Extraction/Data_filtration_kmers.py).
 
-I)<code>[First_Filtration_codeline.R](Feature Extraction/First_Filtration_codeline.R)</code> serves as the primary tool for processing the <code>metadataset.tsv</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>Spikes.fasta</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>. Example: <code>Rscript First_Filtration_codeline.R metadataset.tsv Spikes.fasta spikes.fasta metadata.csv</code>
+I)<code>First_Filtration_codeline.R</code> serves as the primary tool for processing the <code>metadataset.tsv</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>Spikes.fasta</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>. Example: <code>Rscript First_Filtration_codeline.R metadataset.tsv Spikes.fasta spikes.fasta metadata.csv</code>
 
 
 Mandatory:
