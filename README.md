@@ -98,7 +98,7 @@ IV) The repository <code>[Identifier](FeatureExtraction/Identifier)</code> conta
 4) <code>Location</code>: Where the Spike proteins were sequenced.
 
 ## Simulation
-This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCov_World), [United States of America](Simulation/DeepAutoCov_USA), [United Kingdom](Simulation/DeepAutoCov_UK), [Denmark](Simulation/DeepAutoCov_Denmark), and [France](Simulation/DeepAutoCov_France). Within each dataset's folder, you will find two scripts:
+This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCov_World), [United States of America](Simulation/DeepAutoCov_USA), [United Kingdom](Simulation/DeepAutoCov_UK), [Denmark](Simulation/DeepAutoCov_Denmark), and [France](Simulation/DeepAutoCov_France). A general [DeepAutoCov](Simulation/DeepAutoCov)(i.e.; not country-specific) simulation is reported. Within each dataset's folder, you will find two scripts:
 
 1) <code>DeepAutoCov.py</code>: This is the primary script where the simulation is executed.
 2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCov.py.
