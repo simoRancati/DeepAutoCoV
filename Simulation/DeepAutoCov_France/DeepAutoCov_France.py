@@ -79,13 +79,13 @@ def main(options):
     starting_week = 1 # First week of training.
 
     ## Loading first training set
-    df_trainstep_1, train_w_list = load_data(dir_week, [starting_week]) # First training set.
+    df_trainstep_1, train_w_list,a = load_data(dir_week, [starting_week]) # First training set.
     train_step1 = df_trainstep_1.iloc[:, 1:len(df_trainstep_1.columns)].to_numpy()
 
     ## Filter the features of models
     sum_train = np.sum(train_step1, axis=0)
     keepFeature=sum_train/len(train_step1)
-    i_no_zero = np.where(keepFeature >= options.rate_mantain)[0] # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
+    i_no_zero = np.where(keepFeature >= float(options.rate_mantain))[0] # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
     features_no_zero = [features[i] for i in i_no_zero]  # features of model
     write_feature(features_no_zero,path_save_file,'/Features.txt')
 
@@ -107,18 +107,18 @@ def main(options):
     ## Creation of  Autoencoder models
 
     # Parameters
-    nb_epoch = options.number_epoch
-    batch_size = options.batch_size
+    nb_epoch = int(options.number_epoch)
+    batch_size = int(options.batch_size)
     input_dim = train.shape[1]
-    encoding_dim = options.encoding_dim
-    hidden_dim_1 = int(encoding_dim / 2)
-    hidden_dim_2 = int(hidden_dim_1 / 2)
-    hidden_dim_3 = int(hidden_dim_2 / 2)
-    hidden_dim_4 = int(hidden_dim_3 / 2)
-    hidden_dim_5 = int(hidden_dim_4 / 2)
-    reduction_factor = options.red_factor
+    encoding_dim = int(options.encoding_dim)
+    hidden_dim_1 = int(int(encoding_dim) / 2)
+    hidden_dim_2 = int(int(hidden_dim_1) / 2)
+    hidden_dim_3 = int(int(hidden_dim_2) / 2)
+    hidden_dim_4 = int(int(hidden_dim_3) / 2)
+    hidden_dim_5 = int(int(hidden_dim_4) / 2)
+    reduction_factor = float(options.red_factor)
 
-    p_grid = {'nb_epoch':[nb_epoch],'batch_size':[batch_size],'input_dim':[input_dim],'encoding_dim':[encoding_dim],'hidden_dim_1':[int(encoding_dim / 2)],'hidden_dim_2':[hidden_dim_2],'hidden_dim_3':[hidden_dim_3],'hidden_dim_4':[hidden_dim_4],'hidden_dim_5':[hidden_dim_5],'Reduction_factor':[reduction_factor]}
+    p_grid = {'nb_epoch':[nb_epoch],'batch_size':[batch_size],'input_dim':[input_dim],'encoding_dim':[encoding_dim],'hidden_dim_1':[hidden_dim_1],'hidden_dim_2':[hidden_dim_2],'hidden_dim_3':[hidden_dim_3],'hidden_dim_4':[hidden_dim_4],'hidden_dim_5':[hidden_dim_5],'Reduction_factor':[reduction_factor]}
     all_combo = list(ParameterGrid(p_grid))
 
     with strategy.scope(): # Using GPU
@@ -145,7 +145,8 @@ def main(options):
                 classes=lineages_train #seleziono solo i valori
                 sum_train = np.sum(train_model_value, axis=0)
                 keepFeature = sum_train / len(train_model_value)
-                i_no_zero = np.where(keepFeature > options.rate_mantain)[0]
+                i_no_zero = np.where(keepFeature >= float(options.rate_mantain))[
+                    0]  # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
                 features_no_zero = [features[i] for i in i_no_zero]  # features of model
                 write_feature(features_no_zero, path_save_file, '/Features.txt')
                 number_feature = len(i_no_zero)
@@ -177,7 +178,9 @@ def main(options):
 
             ## Loading test set
             # Download test set from the folder created in the script "Data_Filtration_kmers"
-            df_teststep_i, test_w_list = load_data(dir_week, [starting_week + week]) # Test set.
+            df_teststep_i, test_w_list,a = load_data(dir_week, [starting_week + week]) # Test set.
+            if a == 9999:
+                break
             test_step_i = df_teststep_i.iloc[:, 1:len(df_teststep_i.columns)].to_numpy() # transform in numpy.
             id_identifier = df_teststep_i.iloc[:, 0].to_list() # Sequence Identifier.
             test_step_complete_rw = test_step_i # (rw = retraining week)
@@ -201,7 +204,6 @@ def main(options):
             mse = np.mean(np.power(test_step_i - test_x_predictions, 2), axis=1) # Mean Square Error (MSE).
             error_df = pd.DataFrame({'Reconstruction_error': mse})
             threshold_fixed = np.mean(mse_tr) + th * np.std(mse_tr) # Threshold for anomaly detection.
-            print('Threshold is : ' + str(threshold_fixed))
             y_test_i_predict = [-1 if e >= threshold_fixed else 1 for e in error_df.Reconstruction_error.values]
             y_test_i_predict = np.array(y_test_i_predict)
 
@@ -272,6 +274,7 @@ def main(options):
             y_test_dict_predictedclass[starting_week + week] = y_test_i_predict
             y_test_voc_predict = np.array(y_test_i_predict)[i_voc]
 
+            print('Simulation week ' + str(starting_week + week) + ' is finished !')
             for k in lineage_dict.keys():
                 i_k = np.where(np.array(y_test_step_i) == k)[0]
                 # Store the file.
