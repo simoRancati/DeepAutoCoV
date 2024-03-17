@@ -98,13 +98,13 @@ IV) The repository <code>[Identifier](FeatureExtraction/Identifier)</code> conta
 4) <code>Location</code>: Where the Spike proteins were sequenced.
 
 ## Simulation
-This repository hosts the code required to replicate simulations for various datasets, including Global, United States of America, United Kingdom, Denmark, and France. Within each dataset's folder, you will find two scripts:
+This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCov_World), [United States of America](Simulation/DeepAutoCov_USA), [United Kingdom](Simulation/DeepAutoCov_UK), [Denmark](Simulation/DeepAutoCov_Denmark), and [France](Simulation/DeepAutoCov_France). Within each dataset's folder, you will find two scripts:
 
 1) <code>DeepAutoCov.py</code>: This is the primary script where the simulation is executed.
 2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCov.py.
 
 To run the simulation :
-<code>python DeepAutoCov.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 300 -b 256 -d 1024 -r 1e-7 </code>
+<code>python DeepAutoCov.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 50 -b 256 -d 1024 -r 1e-7 </code>
 
 Mandatory:
 
@@ -112,7 +112,7 @@ Mandatory:
 
 -c path where <code>filtered_metadatataset</code> is stored (<code>Exemple: /path/to/metadata.csv </code>);
 
--k path where kmers are stored (example: first line of csv file created in subfolders <code>/path/to/EPI_ISL_6331230.csv</code>).
+-k path where kmers are stored (example: first line of csv file created in subfolders by the code [Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)  <code>/path/to/EPI_ISL_402124.csv</code>).
 
 Optional:
 
@@ -137,7 +137,7 @@ Optional:
 3) File txt that contain the features of Autoencoder Model (<code>Features.txt.png</code>);
 4) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>Autoencoder_models.h5</code>);
 5) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
-6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly) (<code>summary_kmers_week.csv</code>).
+6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly in order of mse) (<code>summary_kmers_week.csv</code>).
 7) File txt containing for each FDLs the weeks in advance when DeepAutoCov flags them as anomalies (<code>Distance_prediction.txt</code>);
 8) File txt containing the median frequency of FDLs when DeepAutoCov flags them as anomalies (<code>median_area.txt</code>);
 9) File txt containing precision of DeepAutoCov (<code>precision_top100.txt</code>);
