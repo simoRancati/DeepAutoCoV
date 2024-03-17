@@ -31,7 +31,7 @@ In pre-processing, libraries belonging to the **R language** are also required:
 3. stringr <code>install.packages("stringr")</code>
 4. vroom <code>install.packages("vroom")</code>
 
-Python version <code>3.9</code> and R <code>4.2.3</code> are required. 
+Python version <code>[3.9](https://www.python.org/downloads/release/python-390/)</code> and R <code>[4.2.3](https://cran.r-project.org/bin/windows/base/)</code> are required. 
 
 ## Feature Extraction
 The files to create the dataset is <code>First_Filtration_codeline.R</code> (in version non command line <code>[First_Filtration.R](FeatureExtraction/First_Filtration.R)</code>) and <code>[Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)</code>.
