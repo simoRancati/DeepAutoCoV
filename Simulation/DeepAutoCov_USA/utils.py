@@ -36,7 +36,14 @@ def load_data(dir_dataset, week_range):
         df_path = dir_dataset + week + '/week_dataset.txt'
 
         # Load the dataset into a pandas DataFrame.
-        df = pd.read_csv(df_path, header=None)
+        a = 0
+        try:
+            df = pd.read_csv(df_path, header=None)
+        except pd.errors.EmptyDataError:
+            print(f"Errore: il file è vuoto o non contiene colonne leggibili.")
+            # Puoi decidere di restituire un DataFrame vuoto o eseguire altre operazioni di recupero.
+            df = pd.DataFrame()
+            a = 9999
 
         # Append the DataFrame to df_list and replicate the week label for each row in the DataFrame.
         df_list.append(df)
@@ -53,7 +60,7 @@ def load_data(dir_dataset, week_range):
                         pass
 
     # Concatenate all DataFrames in df_list and return along with the week list (w_list).
-    return pd.concat(df_list), w_list
+    return pd.concat(df_list), w_list, a
 
 def get_lineage_class(metadata, id_list):
     """
@@ -406,7 +413,7 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
 
     # Callbacks for Model Checkpoint and Early Stopping
     # Set up a checkpoint to save the model and early stopping to prevent overfitting.
-    cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.h5",
+    cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.keras",
                                             mode='min', monitor='loss', verbose=2, save_best_only=True)
     early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='loss',

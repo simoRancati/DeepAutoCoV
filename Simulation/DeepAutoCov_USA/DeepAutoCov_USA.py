@@ -65,13 +65,13 @@ def main(options):
     starting_week = 1 # First week of training.
 
     ## Loading first training set
-    df_trainstep_1, train_w_list = load_data(dir_week, [starting_week]) # First training set.
+    df_trainstep_1, train_w_list, a = load_data(dir_week, [starting_week]) # First training set.
     train_step1 = df_trainstep_1.iloc[:, 1:len(df_trainstep_1.columns)].to_numpy()
 
     ## Filter the features of models
     sum_train = np.sum(train_step1, axis=0)
     keepFeature=sum_train/len(train_step1)
-    i_no_zero = np.where(keepFeature >= options.rate_mantain)[0] # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
+    i_no_zero = np.where(keepFeature >= float(options.rate_mantain))[0] # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
     features_no_zero = [features[i] for i in i_no_zero]  # features of model
     write_feature(features_no_zero,path_save_file,'/Features.txt')
 
@@ -92,16 +92,16 @@ def main(options):
     ## Creation of  Autoencoder models
 
     # Parameters
-    nb_epoch = options.number_epoch
-    batch_size = options.batch_size
+    nb_epoch = int(options.number_epoch)
+    batch_size = int(options.batch_size)
     input_dim = train.shape[1]
-    encoding_dim = options.encoding_dim
-    hidden_dim_1 = int(encoding_dim / 2)
-    hidden_dim_2 = int(hidden_dim_1 / 2)
-    hidden_dim_3 = int(hidden_dim_2 / 2)
-    hidden_dim_4 = int(hidden_dim_3 / 2)
-    hidden_dim_5 = int(hidden_dim_4 / 2)
-    reduction_factor = options.red_factor
+    encoding_dim = int(options.encoding_dim)
+    hidden_dim_1 = int(int(encoding_dim) / 2)
+    hidden_dim_2 = int(int(hidden_dim_1) / 2)
+    hidden_dim_3 = int(int(hidden_dim_2) / 2)
+    hidden_dim_4 = int(int(hidden_dim_3) / 2)
+    hidden_dim_5 = int(int(hidden_dim_4) / 2)
+    reduction_factor = float(options.red_factor)
 
     p_grid = {'nb_epoch':[nb_epoch],'batch_size':[batch_size],'input_dim':[input_dim],'encoding_dim':[encoding_dim],'hidden_dim_1':[int(encoding_dim / 2)],'hidden_dim_2':[hidden_dim_2],'hidden_dim_3':[hidden_dim_3],'hidden_dim_4':[hidden_dim_4],'hidden_dim_5':[hidden_dim_5],'Reduction_factor':[reduction_factor]}
     all_combo = list(ParameterGrid(p_grid))
@@ -128,7 +128,8 @@ def main(options):
                 classes=lineages_train #seleziono solo i valori
                 sum_train = np.sum(train_model_value, axis=0)
                 keepFeature = sum_train / len(train_model_value)
-                i_no_zero = np.where(keepFeature > options.rate_mantain)[0]
+                i_no_zero = np.where(keepFeature >= float(options.rate_mantain))[
+                    0]  # Retain the features that differ from 0 by at least N%. This approach ensures that only the most representative features are kept.
                 features_no_zero = [features[i] for i in i_no_zero]  # features of model
                 write_feature(features_no_zero, path_save_file, '/Features.txt')
                 number_feature = len(i_no_zero)
@@ -159,7 +160,9 @@ def main(options):
 
             ## Loading test set
             # Download test set from the folder created in the script "Data_Filtration_kmers"
-            df_teststep_i, test_w_list = load_data(dir_week, [starting_week + week]) # Test set.
+            df_teststep_i, test_w_list, a = load_data(dir_week, [starting_week + week])  # Test set.
+            if a == 9999:
+                break
             test_step_i = df_teststep_i.iloc[:, 1:len(df_teststep_i.columns)].to_numpy() # transform in numpy.
             id_identifier = df_teststep_i.iloc[:, 0].to_list() # Sequence Identifier.
             test_step_complete_rw = test_step_i # (rw = retraining week)
@@ -262,7 +265,7 @@ def main(options):
                 prediction_lineages.append(partial_summary) # Store the partial summary
                 complete_summary_lineages = [k, len(i_k), h, week]  # The list contains : [Name of lineage,Total number of lineage sequences in the week of simulation,Number of lineage sequences predicted as anomalies, week of simulation].
                 summary_lineages.append(complete_summary_lineages) # Store complete summary.
-
+            print('Simultaion Done for Week' + str(starting_week + week))
 
         # saving results for this comb of param of the oneclass_svm
         results = {'y_test_variant_type': y_test_dict_variant_type,
