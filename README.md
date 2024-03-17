@@ -112,7 +112,7 @@ Mandatory:
 
 -c path where <code>[filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
 
--k path where kmers are stored (example: first line of csv file created in subfolders by the code [Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)  <code>[data_github/Dataset/1/EPI_ISL_402124.csv](data_github/Dataset/1/EPI_ISL_402124.csv)</code>).
+-k path where kmers are stored (example: first line of csv file created in subfolders by the code [Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)  <code>[/data_github/Dataset/1/EPI_ISL_402124.csv](data_github/Dataset/1/EPI_ISL_402124.csv)</code>).
 
 Optional:
 
