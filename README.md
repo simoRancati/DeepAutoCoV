@@ -1,4 +1,4 @@
-# DeepAutoCov
+# DeepAutoCoV
 Code to reproduce the simulation in the following publication:
 
 Forecasting dominance of SARS-CoV-2 lineages by anomaly detection using deep AutoEncoders Simone Rancati, Giovanna Nicora, Mattia Prosperi, Riccardo Bellazzi, Simone Marini, Marco Salemi bioRxiv 2023.10.24.563721; doi: https://doi.org/10.1101/2023.10.24.563721
@@ -98,13 +98,13 @@ IV) The repository <code>[Identifier](FeatureExtraction/Identifier)</code> conta
 4) <code>Location</code>: Where the Spike proteins were sequenced.
 
 ## Simulation
-This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCov_World), [United States of America](Simulation/DeepAutoCov_USA), [United Kingdom](Simulation/DeepAutoCov_UK), [Denmark](Simulation/DeepAutoCov_Denmark), and [France](Simulation/DeepAutoCov_France). A general [DeepAutoCov](Simulation/DeepAutoCov)(i.e.; not country-specific) simulation is reported. Within each dataset's folder, you will find two scripts:
+This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCoV_World), [United States of America](Simulation/DeepAutoCoV_USA), [United Kingdom](Simulation/DeepAutoCoV_UK), [Denmark](Simulation/DeepAutoCoV_Denmark), and [France](Simulation/DeepAutoCoV_France). A general [DeepAutoCoV](Simulation/DeepAutoCoV)(i.e.; not country-specific) simulation is reported. Within each dataset's folder, you will find two scripts:
 
-1) <code>DeepAutoCov.py</code>: This is the primary script where the simulation is executed.
-2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCov.py.
+1) <code>DeepAutoCoV.py</code>: This is the primary script where the simulation is executed.
+2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCoV.py.
 
 To run the simulation :
-<code>python DeepAutoCov.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 50 -b 256 -d 1024 -r 1e-7 </code>
+<code>python DeepAutoCoV.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 50 -b 256 -d 1024 -r 1e-7 </code>
 
 Mandatory:
 
@@ -132,13 +132,13 @@ Optional:
 
 
 -Output:
-1) Precision-graph of the top 100 sequences with higer mean square error (mse) considereted as anomalies by DeepAutoCov model (<code>precision_top100.png</code>);
-2) Graph of the precision considering all the sequences considerated anomalies by DeepAutoCov model (<code>precision_overall.png</code>);
+1) Precision-graph of the top 100 sequences with higer mean square error (mse) considereted as anomalies by DeepAutoCoV model (<code>precision_top100.png</code>);
+2) Graph of the precision considering all the sequences considerated anomalies by DeepAutoCoV model (<code>precision_overall.png</code>);
 3) File txt that contain the features of Autoencoder Model (<code>Features.txt.png</code>);
 4) File.h5 which contains the information (weights) of the trained AutoEncoder (<code>Autoencoder_models.h5</code>);
 5) Graph of number of features (k-mers) during simulation (<code>number_of_features.png</code>);
-6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCov (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly in order of mse) (<code>summary_kmers_week.csv</code>).
-7) File txt containing for each FDLs the weeks in advance when DeepAutoCov flags them as anomalies (<code>Distance_prediction.txt</code>);
-8) File txt containing the median frequency of FDLs when DeepAutoCov flags them as anomalies (<code>median_area.txt</code>);
-9) File txt containing precision of DeepAutoCov (<code>precision_top100.txt</code>);
-10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCov (<code>TOP_100.txt</code>). 
+6) file CSV that contains for each simulation week and for each sequence the k-mers not reproduced correctly by DeepAutoCoV (The first column contain the id_sequence and other columns contain the k-mers not reproduced correctly in order of mse) (<code>summary_kmers_week.csv</code>).
+7) File txt containing for each FDLs the weeks in advance when DeepAutoCoV flags them as anomalies (<code>Distance_prediction.txt</code>);
+8) File txt containing the median frequency of FDLs when DeepAutoCoV flags them as anomalies (<code>median_area.txt</code>);
+9) File txt containing precision of DeepAutoCoV (<code>precision_top100.txt</code>);
+10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>). 
