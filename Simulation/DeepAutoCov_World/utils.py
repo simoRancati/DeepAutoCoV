@@ -370,7 +370,7 @@ def autoencoder_training_GPU(autoencoder, train1, train2, nb_epoch, batch_size):
     Returns:
     - history: A history object containing the training progress information.
     """
-
+    k = 2.5
     # Check if a GPU is available in the TensorFlow environment.
     if tf.config.experimental.list_physical_devices('GPU'):
         # If a GPU is available, configure TensorFlow to use it.
@@ -394,7 +394,7 @@ def autoencoder_training_GPU(autoencoder, train1, train2, nb_epoch, batch_size):
                                   ).history
 
     # Return the history object capturing the training progress.
-    return history
+    return history,k
 
 def weeks_before(summary, lineage_of_interest):
     """
