@@ -113,7 +113,7 @@ Mandatory:
 
 Optional:
 
---fasta_path path to save the outputs (<code>/path/to/save/drive_save</code>);
+--path_save_file path to save the outputs (<code>/path/to/save/drive_save</code>);
 
 --nb_epoch number of epochs (<code>default value: 50</code>);
 
@@ -132,5 +132,5 @@ Optional:
 7) File txt containing for each FDLs the weeks in advance when DeepAutoCoV flags them as anomalies (<code>Distance_prediction.txt</code>);
 8) File txt containing the median frequency of FDLs when DeepAutoCoV flags them as anomalies (<code>median_area.txt</code>);
 9) File txt containing precision of DeepAutoCoV (<code>precision_top100.txt</code>);
-10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>).
-11) File txt that contains the median MRR (Mean Reciprocal Rank)
+10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>);
+11) File txt that contains the median MRR (Mean Reciprocal Rank).
