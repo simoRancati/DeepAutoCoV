@@ -96,32 +96,30 @@ This repository hosts the code required to replicate simulations for various dat
 1) <code>DeepAutoCoV.py</code>: This is the primary script where the simulation is executed.
 2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCoV.py.
 
-To run the example simulation ([DeepAutoCoV](Simulation/DeepAutoCov) you need to use this line of code :
+To run the example simulation ([DeepAutoCoV](Simulation/DeepAutoCov)) you need to use this line of code :
 <code>python /path/user/Simulation/DeepAutoCov/DeepAutoCoV.py --dir_week /path/user[/data_github/Dataset/](data_github/Dataset) --metadata_path /path/user[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv) --metadata_2_path /path/user[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)  --new_class_correction_path /path/user[/data_github/transformed_similarity_analysis.csv](data_github/transformed_similarity_analysis.csv.zip) --fasta_path /path/user/[data_github/spikes.fasta](data_github/spikes.fasta) --path_save_file /path/save/file --nb_epoch 50 --batch_size 256 --treshold_blosum 6800 </code>
 
 Mandatory:
 
--p path of dataset created during the feature extraction (<code>Exemple: [/data_github/Dataset/](data_github/Dataset)</code>);
+--dir_week path of dataset created during the feature extraction (<code>Exemple: [/data_github/Dataset/](data_github/Dataset)</code>);
 
--c path where <code>[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
+---metadata_path path where <code>[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
 
--k path where kmers are stored (example: first line of csv file created in subfolders by the code [Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)  <code>[/data_github/Dataset/1/EPI_ISL_402124.csv](data_github/Dataset/1/EPI_ISL_402124.csv)</code>).
+---metadata_2_path path where <code>[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
+
+--new_class_correction_path path where <code>[/data_github/transformed_similarity_analysis.csv](data_github/transformed_similarity_analysis.csv.zip)</code> is stored. This file contains the last class (in temporal line) for the sequences assigned by GISAID;
+
+--fasta_path path where file containing all the sequences downloaded from GISAID is stored (example:[spikes.fasta](data_github/spikes.fasta))
 
 Optional:
 
--s path to save the outputs (<code>/path/to/save/drive_save</code>);
+--fasta_path path to save the outputs (<code>/path/to/save/drive_save</code>);
 
--m fraction of kmers that are different from 0 to mantain during the simulation (<code>default value: 0.01</code>);
+--nb_epoch number of epochs (<code>default value: 50</code>);
 
--e number of epochs (<code>default value: 50</code>);
+--batch_size batch size for the first week (<code>default value: 256</code>);
 
--b batch size for the first week (<code>default value: 256</code>);
-
--d Sets the encoding dimension (<code>default value: 1024</code>);
-
--r learning rate (<code>default value: 1e-7</code>).
-
--n Simulation Weeks (<code>default value: 2 </code>).
+--treshold_blosum Blosum threshold to filter model predictions (<code>default value: 6722 </code>).
 
 
 -Output:
@@ -134,4 +132,5 @@ Optional:
 7) File txt containing for each FDLs the weeks in advance when DeepAutoCoV flags them as anomalies (<code>Distance_prediction.txt</code>);
 8) File txt containing the median frequency of FDLs when DeepAutoCoV flags them as anomalies (<code>median_area.txt</code>);
 9) File txt containing precision of DeepAutoCoV (<code>precision_top100.txt</code>);
-10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>). 
+10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>).
+11) File txt that contains the median MRR (Mean Reciprocal Rank)
