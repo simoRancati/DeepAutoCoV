@@ -6,17 +6,9 @@ Forecasting dominance of SARS-CoV-2 lineages by anomaly detection using deep Aut
 Scripts to predict anomalies, i.e., Future Dominant Lineages (FDLs) with the Deep Learning AutoEncoder and to perform the simulation are located in the model folder. Scripts to generate the dataset and the feature representations are within the Feature_Extraction folder.
 
 ## Requirements and installation
-You can create a conda env with all the required **Python** packages thanks to the [deepautocov_env.yml](env/deepautocov_env.yml) file
-
-<code>conda env create -f deepautocov_env.yml</code>
-
-To activate the conda env:
-
-<code>conda activate deepautocov_env</code>
 
 **Dependencies**
-
-DeepAutoCov mainly depends on the **Python** scientific stack: 
+DeepAutoCoV mainly depends on the **Python** scientific stack: 
 1. pandas <code>pip install pandas==1.5.3</code>
 2. numpy <code>pip install numpy==1.24.1</code>
 3. statistics <code>pip install statistics==1.0.3.5</code>
@@ -24,6 +16,7 @@ DeepAutoCov mainly depends on the **Python** scientific stack:
 5. scipy <code>pip install scipy==1.10.1</code>
 6. matplotlib <code>pip install matplotlib==3.8.3</code>
 7. scikit-learn <code>pip install scikit-learn==1.2.1</code>
+8. biopython <code>pip install biopython==1.80</code> 
 
 In pre-processing, libraries belonging to the **R language** are also required:
 1. BiocManger <code>install.packages("BiocManager")</code>
@@ -34,9 +27,9 @@ In pre-processing, libraries belonging to the **R language** are also required:
 Python version <code>[3.9](https://www.python.org/downloads/release/python-390/)</code> and R <code>[4.2.3](https://cran.r-project.org/bin/windows/base/)</code> are required. 
 
 ## Feature Extraction
-The files to create the dataset is <code>[First_Filtration_codeline.R](FeatureExtraction/First_Filtration_codeline.R))</code> and <code>[Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)</code>.
+The files to create the dataset is <code>[First_Filtration.R](FeatureExtraction/First_Filtration.R)</code> and <code>[Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)</code>.
 
-I)<code>[First_Filtration_codeline.R](FeatureExtraction/First_Filtration_codeline.R)</code> serves as the primary tool for processing the <code>[metadataset.tsv](https://gisaid.org/)</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>[Spikes.fasta](https://gisaid.org/)</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>. Example: <code>Rscript First_Filtration_codeline.R metadataset.tsv Spikes.fasta spikes.fasta metadata.csv</code>
+I)<code>[First_Filtration_codeline.R](FeatureExtraction/First_Filtration_codeline.R)</code> serves as the primary tool for processing the <code>[metadataset.tsv](https://gisaid.org/)</code> file obtained from the GISAID website (https://gisaid.org/) along with its corresponding <code>[Spikes.fasta](https://gisaid.org/)</code> file. It filters and restructures the data, outputting two refined files: <code>metadata.csv</code> and <code>spikes.fasta</code>.
 
 
 Mandatory:
@@ -98,19 +91,19 @@ IV) The repository <code>[Identifier](FeatureExtraction/Identifier)</code> conta
 4) <code>Location</code>: Where the Spike proteins were sequenced.
 
 ## Simulation
-This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCoV_World), [United States of America](Simulation/DeepAutoCoV_USA), [United Kingdom](Simulation/DeepAutoCoV_UK), [Denmark](Simulation/DeepAutoCoV_Denmark), and [France](Simulation/DeepAutoCoV_France). A general [DeepAutoCoV](Simulation/DeepAutoCoV)(i.e.; not country-specific) simulation is reported. Within each dataset's folder, you will find two scripts:
+This repository hosts the code required to replicate simulations for various datasets, including [Global](Simulation/DeepAutoCov_World), [United States of America](Simulation/DeepAutoCov_USA), [United Kingdom](Simulation/DeepAutoCov_UK), [Denmark](Simulation/DeepAutoCov_Denmark), and [France](Simulation/DeepAutoCov_France). A general [DeepAutoCoV](Simulation/DeepAutoCov)(i.e.; not country-specific) simulation is reported. Within each dataset's folder, you will find two scripts:
 
 1) <code>DeepAutoCoV.py</code>: This is the primary script where the simulation is executed.
 2) <code>utils.py</code>: This script contains all the functions utilized in the main script, DeepAutoCoV.py.
 
-To run the simulation :
-<code>python DeepAutoCoV.py -p /path/to/dataset/ -c /path/to/metadata.csv -k /path/to/kmers_file.csv -s /path/where/to/save/output -m 0.1 -e 50 -b 256 -d 1024 -r 1e-7 </code>
+To run the example simulation ([DeepAutoCoV](Simulation/DeepAutoCov) you need to use this line of code :
+<code>python /path/user/Simulation/DeepAutoCov/DeepAutoCoV.py --dir_week /path/user[/data_github/Dataset/](data_github/Dataset) --metadata_path /path/user[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv) --metadata_2_path /path/user[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)  --new_class_correction_path /path/user[/data_github/transformed_similarity_analysis.csv](data_github/transformed_similarity_analysis.csv.zip) --fasta_path /path/user/[data_github/spikes.fasta](data_github/spikes.fasta) --path_save_file /path/save/file --nb_epoch 50 --batch_size 256 --treshold_blosum 6800 </code>
 
 Mandatory:
 
 -p path of dataset created during the feature extraction (<code>Exemple: [/data_github/Dataset/](data_github/Dataset)</code>);
 
--c path where <code>[filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
+-c path where <code>[/data_github/filtered_metadatataset.csv](data_github/filtered_metadataset.csv)</code> is stored (<code>Exemple: [/data_github/filtered_metadataset.csv](data_github/filtered_metadataset.csv)</code>);
 
 -k path where kmers are stored (example: first line of csv file created in subfolders by the code [Data_filtration_kmers.py](FeatureExtraction/Data_Filtration_kmers.py)  <code>[/data_github/Dataset/1/EPI_ISL_402124.csv](data_github/Dataset/1/EPI_ISL_402124.csv)</code>).
 
