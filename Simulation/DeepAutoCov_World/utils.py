@@ -6,7 +6,255 @@ from collections import Counter
 from scipy.stats import shapiro
 import matplotlib.pyplot as plt
 import csv
+from Bio import Align
+from Bio.Align import substitution_matrices
 
+
+def plot_evaluation_metrics(mean_positions, mrrs, precisions_top_25_percent, precisions_top_50_percent,
+                            precisions_top_75_percent, save_path):
+    """
+    Plots the evaluation metrics over iterations and saves the plot to a specified path.
+
+    Parameters:
+    mean_positions (list or array): Mean positions over iterations.
+    mrrs (list or array): Mean Reciprocal Ranks (MRR) over iterations.
+    precisions_top_25_percent (list or array): Precision in the top 25% over iterations.
+    precisions_top_50_percent (list or array): Precision in the top 50% over iterations.
+    precisions_top_75_percent (list or array): Precision in the top 75% over iterations.
+    save_path (str): Path to save the plot.
+    """
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(mrrs, label="MRR")
+    plt.plot(precisions_top_25_percent, label="Precision Top 25%")
+    plt.plot(precisions_top_50_percent, label="Precision Top 50%")
+    plt.plot(precisions_top_75_percent, label="Precision Top 75%")
+    plt.xlabel("Iteration")
+    plt.ylabel("Metrics")
+    plt.title("Evaluation Metrics Over Iterations")
+    plt.legend()
+    plt.savefig(save_path)
+
+
+def analyze_lineages(lineages, mse_list, dominant_lineages):
+    """
+    This function analyzes the provided lineages and their respective MSE values,
+    sorts them in descending order of MSE, calculates the positions of dominant
+    lineages and their sublineages, and computes various evaluation metrics.
+
+    Args:
+    - lineages (list): List of lineage identifiers.
+    - mse_list (list): List of Mean Squared Error (MSE) values corresponding to the lineages.
+    - dominant_lineages (list): List of dominant lineage identifiers.
+
+    Returns:
+    - dict: A dictionary containing sorted lineages, sorted MSE values,
+            mean position of dominant lineages, Mean Reciprocal Rank (MRR),
+            and precision values for the top 25%, 50%, and 75%.
+    """
+
+    # Combine lineages and mse_list into a list of tuples
+    combined = list(zip(lineages, mse_list))
+
+    # Sort the combined list based on MSE in descending order
+    sorted_combined = sorted(combined, key=lambda x: x[1], reverse=True)
+
+    # Unzip the sorted combined list back into separate lists
+    sorted_lineages, sorted_mse_list = zip(*sorted_combined) if combined else ([], [])
+
+    # Find the positions of dominant lineages and their sublineages
+    positions = []
+    for dominant in dominant_lineages:
+        for i, lineage in enumerate(sorted_lineages):
+            if lineage == dominant or lineage.startswith(dominant + '.'):
+                positions.append(i + 1)  # Use 1-based indexing for positions
+
+    # Calculate the mean position of the dominant lineages
+    mean_position = sum(positions) / len(positions) if positions else None # 1-based indexing for positions
+
+    # Calculate the Mean Reciprocal Rank (MRR)
+    reciprocal_ranks = [1 / pos for pos in positions]
+    mrr = sum(reciprocal_ranks) / len(reciprocal_ranks) if reciprocal_ranks else None
+
+    # Function to calculate precision for a given threshold
+    def calculate_precision(positions, threshold):
+        count_in_top = sum(1 for pos in positions if pos <= threshold + 1)
+        return count_in_top / (threshold + 1)
+
+    # Calculate precision for top 25%, 50%, and 75%
+    total_count = len(sorted_lineages)
+    precision_top_25 = calculate_precision(positions, int(total_count * 0.25))
+    precision_top_50 = calculate_precision(positions, int(total_count * 0.50))
+    precision_top_75 = calculate_precision(positions, int(total_count * 0.75))
+
+    return {
+        "sorted_lineages": list(sorted_lineages),
+        "sorted_mse_list": list(sorted_mse_list),
+        "mean_position": mean_position,
+        "mrr": mrr,
+        "precision_top_25": precision_top_25,
+        "precision_top_50": precision_top_50,
+        "precision_top_75": precision_top_75,
+    }
+
+def update_class_list(df, id_list, class_list):
+    """
+    This function updates the class list based on information provided in a DataFrame.
+
+    Parameters:
+    - df: DataFrame containing 'id' and 'sequence_last_class' columns.
+    - id_list: List of IDs for which the class needs to be updated.
+    - class_list: Original list of classes to be updated.
+
+    Returns:
+    - An updated list of classes where, for each ID in id_list, the corresponding class in class_list
+      has been updated with the value from the 'sequence_last_class' column of the DataFrame,
+      if the ID is present in the DataFrame.
+    """
+
+    # Create a dictionary from the CSV to map IDs to 'last class'
+    id_to_last_class = dict(zip(df['id'], df['sequence_last_class']))
+
+    # Update the class_list based on the 'last class' in the CSV for the given IDs
+    for i, id_ in enumerate(id_list):
+        if id_ in id_to_last_class:
+            class_list[i] = id_to_last_class[id_]
+
+    return class_list
+
+def adjust_predictions_based_on_blosum(blosum_scores, predictions, threshold):
+    """
+    Adjust predictions based on Blosum scores and a given threshold.
+    If a Blosum score is less than the threshold, change the prediction to 1 (true positive).
+
+    :param blosum_scores: List of Blosum scores corresponding to predictions.
+    :param predictions: List of predictions (typically -1 for false positive, 1 for true positive).
+    :param threshold: Blosum score threshold below which a prediction is set to 1.
+    :return: Modified list of predictions.
+    """
+    adjusted_predictions = []
+
+    # Iterate through both scores and predictions simultaneously
+    for score, prediction in zip(blosum_scores, predictions):
+        if score > threshold and prediction == -1:
+            adjusted_predictions.append(1)
+        else:
+            adjusted_predictions.append(prediction)
+
+    return adjusted_predictions
+
+
+def count_true_and_false_positives_with_blosum_score(df, known_lineages):
+    """
+    Counts the true positives and false positives based on a DataFrame
+    with 'Lineages_TP' and 'Blosum_score' columns. It calculates the average Blosum score
+    for true positives.
+
+    A true positive is a lineage that is either present in the list of known lineages
+    or is a sublineage of a known element. A false positive is a lineage that does not
+    meet the criteria to be a true positive.
+
+    :param df: DataFrame containing 'Lineages_TP' and 'Blosum_score'.
+    :param known_lineages: List of known lineages.
+    :return: Average Blosum score for true positives.
+    """
+    total_blosum_score_tp = 0
+
+    # Clean up spaces in the known lineages list
+    cleaned_known_lineages = [lineage.strip() for lineage in known_lineages]
+    total_blosum_score_tp = []
+
+    # Iterate through each row in the DataFrame
+    for index, row in df.iterrows():
+        predicted = row['Lineages_TP'].strip()
+        if any(predicted.startswith(known) for known in cleaned_known_lineages):
+            total_blosum_score_tp.append(row['Blosum_score'])
+
+    # Calculate the average Blosum score for true positives if there are any true positives
+    median_blosum_tp = np.median(total_blosum_score_tp)
+
+    return  median_blosum_tp
+
+def origin_spike(dict_seq):
+    """
+        Return Spike Protein isolated in Whuan.
+    """
+    seq_orig = dict_seq['EPI_ISL_402123']
+
+    return seq_orig
+
+
+def calculate_blosum_scores(reference, sequences):
+    """
+    Calculate BLOSUM62 alignment scores between a reference sequence and a list of sequences.
+
+    Input:
+    - reference: A string representing the reference protein sequence.
+    - sequences: A list of strings representing the protein sequences to be compared against the reference.
+
+    Output:
+    - scores: A list of floats representing the alignment scores for each sequence in the 'sequences' list,
+              maintaining the order of the input sequences.
+    """
+    # Load the BLOSUM62 matrix
+    matrix = substitution_matrices.load("DAYHOFF")
+
+    # Create a PairwiseAligner object
+    aligner = Align.PairwiseAligner()
+    aligner.substitution_matrix = matrix
+
+    # List to store the scores
+    scores = []
+
+    # Perform global alignment for each sequence and store the score
+    for sequence in sequences:
+        score = aligner.score(reference.rstrip("*"), sequence.rstrip("*"))
+        scores.append(score)
+
+    # Return the list of scores
+    return np.array(scores)
+
+def read_protein_sequences_header(file):
+    """
+    This function reads a FASTA file, extracts protein sequences, and their respective headers,
+    and stores them in a dictionary with headers as keys and sequences as values.
+
+    Parameters:
+    - file: The path to the FASTA file.
+
+    Returns:
+    - sequences_dict: A dictionary where each key is a header and the corresponding value is the protein sequence.
+    """
+
+    sequences = []  # Initialize an empty list to store protein sequences.
+    headers = []    # Initialize an empty list to store headers of the sequences.
+    sequences_dict = {}  # Initialize an empty dictionary to store the sequences with headers as keys.
+
+    with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+        current_sequence = ''  # A variable to hold the current sequence.
+
+        for line in f:
+            line = line.strip()  # Strip whitespace from the line.
+
+            if line.startswith('>'):  # Check for header line.
+                if current_sequence:  # If there's a current sequence, store it before starting a new one.
+                    sequences.append(current_sequence)
+                    headers.append(current_header)  # Store the current header
+                    sequences_dict[current_header] = current_sequence  # Map the current header to its sequence
+                    current_sequence = ''
+
+                # Update the current header, excluding the first character ('>')
+                current_header = line[1:]
+
+            else:
+                current_sequence += line  # Append non-header lines to the current sequence.
+
+        if current_sequence:  # After the last line, add the final sequence.
+            sequences.append(current_sequence)
+            headers.append(current_header)
+            sequences_dict[current_header] = current_sequence  # Map the last header to its sequence
+
+    return sequences_dict
 
 def load_data(dir_dataset, week_range):
     """
@@ -36,14 +284,7 @@ def load_data(dir_dataset, week_range):
         df_path = dir_dataset + week + '/week_dataset.txt'
 
         # Load the dataset into a pandas DataFrame.
-        a = 0
-        try:
-            df = pd.read_csv(df_path, header=None)
-        except pd.errors.EmptyDataError:
-            print(f"Errore: il file è vuoto o non contiene colonne leggibili.")
-            # Puoi decidere di restituire un DataFrame vuoto o eseguire altre operazioni di recupero.
-            df = pd.DataFrame()
-            a = 9999
+        df = pd.read_csv(df_path, header=None)
 
         # Append the DataFrame to df_list and replicate the week label for each row in the DataFrame.
         df_list.append(df)
@@ -60,7 +301,7 @@ def load_data(dir_dataset, week_range):
                         pass
 
     # Concatenate all DataFrames in df_list and return along with the week list (w_list).
-    return pd.concat(df_list), w_list, a
+    return pd.concat(df_list), w_list
 
 def get_lineage_class(metadata, id_list):
     """
@@ -155,7 +396,7 @@ def autoencoder_training_GPU(autoencoder, train1, train2, nb_epoch, batch_size):
     # Return the history object capturing the training progress.
     return history
 
-def weeks_before(summary):
+def weeks_before(summary, lineage_of_interest):
     """
     This function calculates the number of weeks before each lineage in the summary was first predicted
     as an anomaly compared to when it was first recognized.
@@ -168,9 +409,20 @@ def weeks_before(summary):
     """
 
     # A predefined NumPy array containing lineages and their respective weeks of recognition.
-    week_identification_np=np.array([['B.1',11],['B.1.1 ',12],['D.2',30],['B.1.1.284',32],['B.1.177',41],['B.1.2 ',45],['B.1.1.7',53],['AY.4',77], ['B.1.617.2',87], ['AY.29',87],['AY.103',104], ['AY.43',105],['AY.44',105],['BA.2',110],['BA.1',110], ['BA.2.9',110], ['BA.2.12.1',124], ['BA.5',137], ['BA.5.1',137], ['BA.5.2',140], ['BR.2.1',153], ['XBB.1.5',163], ['CH.1.1',167], ['FK.1.1',182], ['XBC.1.6',182], ['XBC.1.3',185], ['DV.7.1',192],['HW.1.1',195], ['EG.5.1',197]])
-    week_growing_np = np.array([['B.1',9],['B.1.1 ',5],['D.2',18],['B.1.1.284',10],['B.1.177',35],['B.1.2 ',38],['B.1.1.7',46],['AY.4',57], ['B.1.617.2',73], ['AY.29',20],['AY.103',85], ['AY.43',20],['AY.44',20],['BA.2',10],['BA.1',10], ['BA.2.9',7], ['BA.2.12.1',18], ['BA.5',16], ['BA.5.1',16], ['BA.5.2',13], ['BR.2.1',8], ['XBB.1.5',23], ['CH.1.1',23], ['FK.1.1',17], ['XBC.1.6',21], ['XBC.1.3',40], ['DV.7.1',11], ['HW.1.1',14], ['EG.5.1',17]])
+    week_identification_np = np.array(
+        [['B.1', 11], ['B.1.1 ', 12], ['D.2', 30], ['B.1.1.284', 32], ['B.1.177', 41], ['B.1.2 ', 45], ['B.1.1.7', 53],
+         ['AY.4', 77], ['B.1.617.2', 87], ['AY.29', 87], ['AY.103', 104], ['AY.43', 105], ['AY.44', 105], ['BA.2', 110],
+         ['BA.1', 110], ['BA.2.9', 110], ['BA.2.12.1', 124], ['BA.5', 137], ['BA.5.1', 137], ['BA.5.2', 140],
+         ['BR.2.1', 153], ['XBB.1.5', 163], ['CH.1.1', 167], ['FK.1.1', 182], ['XBC.1.6', 182], ['XBC.1.3', 185],
+         ['DV.7.1', 192], ['HW.1.1', 195], ['EG.5.1', 197]])
+    week_growing_np = np.array(
+        [['B.1', 9], ['B.1.1 ', 5], ['D.2', 18], ['B.1.1.284', 10], ['B.1.177', 35], ['B.1.2 ', 38], ['B.1.1.7', 46],
+         ['AY.4', 57], ['B.1.617.2', 73], ['AY.29', 20], ['AY.103', 85], ['AY.43', 20], ['AY.44', 20], ['BA.2', 10],
+         ['BA.1', 10], ['BA.2.9', 7], ['BA.2.12.1', 18], ['BA.5', 16], ['BA.5.1', 16], ['BA.5.2', 13], ['BR.2.1', 8],
+         ['XBB.1.5', 23], ['CH.1.1', 23], ['FK.1.1', 17], ['XBC.1.6', 21], ['XBC.1.3', 40], ['DV.7.1', 11],
+         ['HW.1.1', 14], ['EG.5.1', 17]])
 
+    #
     # Convert the input summary to a NumPy array for easier processing.
     summary_np = np.array(summary)
 
@@ -185,8 +437,8 @@ def weeks_before(summary):
 
     # Iterate through each unique lineage in the dictionary.
     for k in Lineages_dict.keys():
-        if k == 'unknown':
-            continue  # Skip if the lineage is 'unknown'
+        if k not in lineage_of_interest:
+            continue  # Skip if the lineage not in lineage of interest'
 
         # Find indices in summary where the current lineage is present.
         i_k = np.where(summary_np == k)[0]
@@ -213,10 +465,10 @@ def weeks_before(summary):
 
         # Calculate the difference in weeks between recognized and first predicted anomaly week.
         week_before = np.array(week_recognize - week_first_prediction_true)
-        fraction_before = np.array((week_recognize - week_first_prediction_true) / interval_10_percent)
+        fraction_before = np.array((week_recognize - week_first_prediction_true)/interval_10_percent)
 
         # Append the result to the final_distance list.
-        summary = [k, week_before, fraction_before]
+        summary = [k, week_before,fraction_before]
         final_distance.append(summary)
 
     # Return the list of differences for each lineage.
@@ -318,6 +570,57 @@ def find_indices_lineage_per_week(lineage_column, week, dictionary_lineage_weeks
     # Return the array of indices.
     return indices_rows_np
 
+def find_indices_lineage_per_week_sublineage(lineage_column, week, dictionary_lineage_weeks):
+    """
+    This function finds row indices in a dataset for specific lineages and their sublineages corresponding to a given week,
+    excluding the sublineages that are sublineages of new lineages in subsequent weeks.
+
+    Parameters:
+    - lineage_column: The column in the dataset containing lineage information.
+    - week: The specific week for which lineages are to be matched.
+    - dictionary_lineage_weeks: A dictionary mapping weeks to lineages.
+
+    Returns:
+    - indices_rows_np: A NumPy array of integers containing the indices of rows matching the specified lineages and their sublineages for the week,
+                       excluding those sublineages of new lineages in subsequent weeks.
+    """
+    # Extract the lineages for the specified week from the dictionary.
+    weekly_lineages = set(dictionary_lineage_weeks[week])
+
+    # Extract lineages for the previous weeks.
+    previous_lineages = set()
+    weeks = list(dictionary_lineage_weeks.keys())
+    current_week_index = weeks.index(week)
+    previous_weeks = weeks[:current_week_index]
+
+    for previous_week in previous_weeks:
+        previous_lineages.update(dictionary_lineage_weeks[previous_week])
+
+    # Extract lineages for the subsequent weeks.
+    new_subsequent_lineages = set()
+    subsequent_weeks = weeks[current_week_index + 1:]
+
+    for subsequent_week in subsequent_weeks:
+        for lineage in dictionary_lineage_weeks[subsequent_week]:
+            if lineage not in weekly_lineages:
+                new_subsequent_lineages.add(lineage)
+
+    # Create a set to store the indices of corresponding rows.
+    indices_rows = []
+
+    # Iterate through the lineage column and find sublineages for the specified week.
+    for i, lineage in enumerate(lineage_column): # prima c'era or
+        if any(lineage == weekly_lineage or lineage.startswith(weekly_lineage + '.') for weekly_lineage in
+               weekly_lineages):
+            # Check if this lineage is a sublineage of any new subsequent lineages.
+            if not any(lineage == new_lineage or lineage.startswith(new_lineage + '.') for new_lineage in new_subsequent_lineages):
+                indices_rows.append(i)
+
+    # Convert the indices list to a NumPy array of integers.
+    indices_rows_np = np.array(indices_rows, dtype=int)
+
+    # Return the array of indices.
+    return indices_rows_np
 
 
 def test_normality(autoencoder, train_model):
@@ -408,11 +711,9 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
     autoencoder = tf.keras.Model(inputs=input_layer, outputs=decoder)
     autoencoder.summary()
 
-    # constant egual 2.5
-    k = 2.5
     # Callbacks for Model Checkpoint and Early Stopping
     # Set up a checkpoint to save the model and early stopping to prevent overfitting.
-    cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.keras",
+    cp = tf.keras.callbacks.ModelCheckpoint(filepath=path_salvataggio_file + "/autoencoder_fraud_AERNS.h5",
                                             mode='min', monitor='loss', verbose=2, save_best_only=True)
     early_stop = tf.keras.callbacks.EarlyStopping(
         monitor='loss',
@@ -429,7 +730,7 @@ def model(input_dim, encoding_dim, hidden_dim_1, hidden_dim_2, hidden_dim_3, hid
                         optimizer='adam')
 
     # Return the compiled autoencoder model.
-    return autoencoder,k
+    return autoencoder
 
 
 def kmers_importance(prediction, true_sequence, kmers):
@@ -629,29 +930,29 @@ def lineages_of_interest():
         []]#197
 
     dictionary_lineage_week = {
-        11: ['unknown', 'B.1'],
-        12: ['unknown', 'B.1', 'B.1.1'],
-        30: ['unknown', 'B.1', 'B.1.1','D.2'],
-        32: ['unknown', 'B.1', 'B.1.1', 'D.2','B.1.1.284'],
-        41: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284','B.1.177'],
-        45: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2'],
-        53: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7'],
-        77: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4'],
-        87: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29'],
-        104: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103'],
-        105: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44'],
-        110: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9'],
-        124: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1'],
-        137: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1','BA.5','BA.5.1'],
-        140: ['unknown', 'B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1','BA.5','BA.5.1', 'BA.5.2'],
-        153: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1'],
-        163: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5'],
-        167: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1'],
-        182: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1','FK.1.1','XBC.1.6'],
-        185: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1','FK.1.1','XBC.1.6','XBC.1.3'],
-        192: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3','DV.7.1'],
-        195: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3', 'DV.7.1','HW.1.1'],
-        197: ['unknown', 'B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3', 'DV.7.1', 'HW.1.1','EG.5.1']
+        11: ['B.1'],
+        12: ['B.1', 'B.1.1'],
+        30: ['B.1', 'B.1.1','D.2'],
+        32: ['B.1', 'B.1.1', 'D.2','B.1.1.284'],
+        41: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284','B.1.177'],
+        45: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2'],
+        53: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7'],
+        77: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4'],
+        87: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29'],
+        104: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103'],
+        105: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44'],
+        110: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9'],
+        124: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1'],
+        137: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1','BA.5','BA.5.1'],
+        140: ['B.1', 'B.1.1','D.2','B.1.1.284', 'B.1.177','B.1.2','B.1.1.7','AY.4','B.1.617.2','AY.29','AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9','BA.2.12.1','BA.5','BA.5.1', 'BA.5.2'],
+        153: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1'],
+        163: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5'],
+        167: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1'],
+        182: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1','FK.1.1','XBC.1.6'],
+        185: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1','XBB.1.5','CH.1.1','FK.1.1','XBC.1.6','XBC.1.3'],
+        192: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3','DV.7.1'],
+        195: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3', 'DV.7.1','HW.1.1'],
+        197: ['B.1', 'B.1.1', 'D.2', 'B.1.1.284', 'B.1.177', 'B.1.2', 'B.1.1.7', 'AY.4', 'B.1.617.2','AY.29', 'AY.103', 'AY.43', 'AY.44', 'BA.1', 'BA.2', 'BA.2.9', 'BA.2.12.1', 'BA.5', 'BA.5.1', 'BA.5.2','BR.2.1', 'XBB.1.5', 'CH.1.1', 'FK.1.1', 'XBC.1.6', 'XBC.1.3', 'DV.7.1', 'HW.1.1','EG.5.1']
     }
 
     lineage_know = [
@@ -721,17 +1022,18 @@ def write_feature(feature_model, path_to_save, name_txt):
 def count_true_and_false_positives_top100(predicted_lineages, known_lineages):
     """
     Counts the true positives and false positives in a list of predicted lineages,
-    making it robust to spaces in lineage names.
+    and returns an associated list indicating positions as 1 for true positive and -1 for false positive.
 
     A true positive is a lineage that is either present in the list of known lineages or is a sublineage of a known element.
     A false positive is a lineage that does not meet the criteria to be a true positive.
 
     :param predicted_lineages: List of predicted lineages.
     :param known_lineages: List of known lineages.
-    :return: A tuple (true_positives, false_positives).
+    :return: A tuple (true_positives, false_positives, tp_fp_positions).
     """
     true_positives = 0
     false_positives = 0
+    tp_fp_positions = []
 
     # Clean up spaces in the lineages lists
     cleaned_predicted_lineages = [lineage.strip() for lineage in predicted_lineages]
@@ -740,10 +1042,12 @@ def count_true_and_false_positives_top100(predicted_lineages, known_lineages):
     for predicted in cleaned_predicted_lineages:
         if any(predicted.startswith(known) for known in cleaned_known_lineages):
             true_positives += 1
+            tp_fp_positions.append(1)
         else:
             false_positives += 1
+            tp_fp_positions.append(-1) # qua ci va meno 1
 
-    return true_positives, false_positives
+    return true_positives, false_positives, np.array(tp_fp_positions)
 
 def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
     """
@@ -771,6 +1075,27 @@ def count_true_and_false_positives_overall(predicted_lineages, known_lineages):
             false_positives += 1
 
     return true_positives, false_positives
+
+
+# def plot_weekly_precision(precisions, file_path,title):
+#     """
+#     This function takes a list of precision values for each week and creates a line plot using Seaborn.
+#
+#     :param precisions: List of precision values (float or int) for each week.
+#     """
+#     # Create a DataFrame with the precision values
+#     data = pd.DataFrame({'Week': range(len(precisions)), 'Precision': precisions})
+#
+#     # Create a line plot
+#     sns.barplot(x='Week', y='Precision', data=data)
+#
+#     # Add titles and labels
+#     plt.title('Weekly Precision')
+#     plt.xlabel('Week')
+#     plt.ylabel('Precision')
+#
+#     # Save the plot
+#     plt.savefig(file_path+title)
 
 
 def plot_weekly_precision(precisions, file_path, title):
@@ -823,7 +1148,7 @@ def true_lineages_week(test_set, true_positives):
 
     return count
 
-def covered_area(measure_sensitivity):
+def covered_area(measure_sensitivity, lineage_of_interest):
     """
     Calculate the covered area for different variants over weeks based on sensitivity measurements.
 
@@ -844,7 +1169,7 @@ def covered_area(measure_sensitivity):
     variant_dict = Counter(Variants)
 
     for k in variant_dict.keys():
-        if k == 'unknown':
+        if k not in lineage_of_interest:
             continue
         indices_k = np.where(measure_sensitivity_np == k)[0] # Find indices where my variant is
         total = np.array(list(map(int, measure_sensitivity_np[indices_k, 1])))
@@ -864,11 +1189,11 @@ def covered_area(measure_sensitivity):
 
     return final_area, only_area
 
-def write_precision(precision,week,n = 100):
+def write_precision(precision,week):
     # First, we filter the precision values based on the condition.
     filtered_precision_paper = [precision[i] for i in range(len(week)) if precision[i] > 0]
     filtered_precision_week_1 = [precision[i] for i in range(len(week)) if week[i] > 1]
-    filtered_precision_week_20 = [precision[i] for i in range(len(week)) if week[i] > n]
+    filtered_precision_week_20 = [precision[i] for i in range(len(week)) if week[i] > 100]
 
     # Median
     median_precision_paper = np.mean(filtered_precision_paper)
@@ -883,7 +1208,6 @@ def write_precision(precision,week,n = 100):
     PPV = (median_precision_week_1 + median_precision_week_20) / 2
     q1 = (q1_prec_week_1 + q1_prec_week_20) / 2
     q3 = (q3_prec_week_1 + q3_prec_week_20) / 2
-
     return [
         ['The median is (paper) ' + str(median_precision_paper), 'The 25th percentile is (paper) ' + str(q1_prec_paper),
          'The 75th percentile is (paper) ' + str(q3_prec_paper)],
