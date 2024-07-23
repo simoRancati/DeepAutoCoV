@@ -133,4 +133,4 @@ Optional:
 8) File txt containing the median frequency of FDLs when DeepAutoCoV flags them as anomalies (<code>median_area.txt</code>);
 9) File txt containing precision of DeepAutoCoV (<code>precision_top100.txt</code>);
 10) File txt that contains for each week of simulation the lineages defined as anomalies by DeepAutoCoV (<code>TOP_100.txt</code>);
-11) File txt that contains the median MRR (Mean Reciprocal Rank).
+11) File txt that contains the median MRR (Mean Reciprocal Rank)(<code>mrr.txt</code>).
