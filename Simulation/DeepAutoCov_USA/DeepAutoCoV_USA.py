@@ -199,9 +199,8 @@ def main(args):
             test_step_i = test_step_i[:, i_no_zero] # feature selections
             y_test_step_i = get_lineage_class(metadata, id_identifier) # type of lineages present in test set.
             print(y_test_step_i)
-            # !!!!!! In GISAID dataset we have seen that the same sequence has different classification !!!!
+            # lat class
             y_test_step_i = update_class_list(new_class_correction, id_identifier, y_test_step_i)
-            # !!!!!!------------------------------------------------------------------------------------!!!!
             print(y_test_step_i)
             number_of_true_positives = true_lineages_week(y_test_step_i, valid_lineage_prc[ind_prc])
             lineages_in_week.append(number_of_true_positives)
